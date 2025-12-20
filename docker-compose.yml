@@ -1,0 +1,30 @@
+# Bloomberg MCP Server - Docker Compose
+#
+# Note: This requires blpapi to be properly installed in the container.
+# For local development, use run_server.bat instead.
+#
+# Usage:
+#   docker-compose up -d
+#   docker-compose logs -f bloomberg-mcp
+
+version: '3.8'
+
+services:
+  bloomberg-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bloomberg-mcp-server
+    ports:
+      - "8765:8080"
+    environment:
+      - BLOOMBERG_HOST=host.docker.internal
+      - BLOOMBERG_PORT=8194
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

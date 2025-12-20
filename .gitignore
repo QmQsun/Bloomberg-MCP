@@ -45,3 +45,11 @@ Thumbs.db
 
 # Project specific
 *.log
+nul
+
+# Vendor libraries (install separately)
+blpapi_cpp/
+blpapi_python/
+
+# Data files
+data/

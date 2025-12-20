@@ -16,6 +16,7 @@ from .responses import (
     HistoricalDataPoint,
     IntradayBar,
     IntradayBarData,
+    ScreenResult,
     # Parse functions
     parse_reference_data_response,
     parse_historical_data_response,
@@ -24,6 +25,7 @@ from .responses import (
     parse_instrument_search_response,
     parse_field_search_response,
     parse_field_info_response,
+    parse_beqs_response,
 )
 
 __all__ = [
@@ -35,6 +37,7 @@ __all__ = [
     "HistoricalDataPoint",
     "IntradayBar",
     "IntradayBarData",
+    "ScreenResult",
     # Parse functions
     "parse_reference_data_response",
     "parse_historical_data_response",
@@ -43,4 +46,5 @@ __all__ = [
     "parse_instrument_search_response",
     "parse_field_search_response",
     "parse_field_info_response",
+    "parse_beqs_response",
 ]

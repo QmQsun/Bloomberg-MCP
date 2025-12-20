@@ -50,6 +50,80 @@ hist = get_historical_data(
 | `search_fields()` | Discover Bloomberg fields |
 | `get_field_info()` | Field metadata |
 
+## MCP Server (Claude Code Integration)
+
+This package includes an MCP server that exposes Bloomberg tools to Claude Code CLI.
+
+### Setup for Claude Code
+
+1. **Install dependencies:**
+   ```bash
+   pip install -e .
+   ```
+
+2. **Configure Claude Code** (already done if using this repo):
+
+   The `.claude.json` in the parent directory configures the MCP server:
+   ```json
+   {
+     "mcpServers": {
+       "bloomberg-mcp": {
+         "command": "python",
+         "args": ["-m", "bloomberg_mcp.server"],
+         "cwd": "path/to/bloomberg-mcp",
+         "env": {
+           "BLOOMBERG_HOST": "localhost",
+           "BLOOMBERG_PORT": "8194"
+         }
+       }
+     }
+   }
+   ```
+
+3. **Verify Bloomberg Terminal is running** with API enabled.
+
+4. **Restart Claude Code** to load the MCP server.
+
+### Running the Server Manually
+
+```bash
+# Stdio transport (default, for Claude Code)
+python -m bloomberg_mcp.server
+
+# HTTP transport (for web clients)
+python -m bloomberg_mcp.server --http --port=8080
+
+# SSE transport (for streaming)
+python -m bloomberg_mcp.server --sse --port=8080
+```
+
+### MCP Tools Available
+
+| Tool | Description |
+|------|-------------|
+| `bloomberg_get_reference_data` | Get current field values |
+| `bloomberg_get_historical_data` | Get historical time series |
+| `bloomberg_get_intraday_bars` | Get intraday OHLCV bars |
+| `bloomberg_get_intraday_ticks` | Get raw tick data |
+| `bloomberg_search_securities` | Search for securities |
+| `bloomberg_search_fields` | Discover Bloomberg fields |
+| `bloomberg_get_field_info` | Get field metadata |
+
+### Docker Setup (Optional)
+
+For running the MCP server in Docker:
+
+```bash
+# Build and run
+docker-compose up -d
+
+# View logs
+docker-compose logs -f bloomberg-mcp
+```
+
+Note: Docker requires blpapi to be properly installed in the container and
+network access to Bloomberg Terminal on the host.
+
 ## Documentation
 
 See [CLAUDE.md](CLAUDE.md) for:
