@@ -126,7 +126,7 @@ All tools support `response_format`: `"markdown"` (default) or `"json"`.
 ### Prerequisites
 
 - Python 3.10+
-- Bloomberg Terminal running with API enabled, **or** B-PIPE connection
+- **Bloomberg Terminal running and logged in on the same machine** — the server connects to the Terminal's local API on `localhost:8194`. No separate API keys or tokens are needed; the Terminal session provides authentication.
 - Bloomberg C++ SDK (`blpapi_cpp`)
 - Bloomberg Python SDK (`blpapi`)
 
