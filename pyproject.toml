@@ -47,8 +47,8 @@ dev = [
 ]
 
 [project.urls]
-Documentation = "https://github.com/yourusername/bloomberg-mcp#readme"
-Source = "https://github.com/yourusername/bloomberg-mcp"
+Documentation = "https://github.com/tallinn102/bloomberg-mcp#readme"
+Source = "https://github.com/tallinn102/bloomberg-mcp"
 
 [tool.setuptools.packages.find]
 where = ["src"]

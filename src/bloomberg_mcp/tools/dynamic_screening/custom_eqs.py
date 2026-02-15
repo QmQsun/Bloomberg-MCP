@@ -280,14 +280,47 @@ def get_index_constituents(
     members = results[0].fields.get("INDX_MEMBERS", [])
 
     # INDX_MEMBERS returns a list of dicts with "Member Ticker and Exchange Code"
+    # Format is like "NVDA UW" where UW = NASDAQ, UN = NYSE, etc.
+    # We need to normalize to Bloomberg format like "NVDA US Equity"
+
+    # Exchange code mappings to Bloomberg format
+    EXCHANGE_TO_BLOOMBERG = {
+        "UW": "US Equity",  # NASDAQ
+        "UN": "US Equity",  # NYSE
+        "UA": "US Equity",  # NYSE American (AMEX)
+        "UP": "US Equity",  # NYSE Arca
+        "UQ": "US Equity",  # NASDAQ Global Select
+        "UR": "US Equity",  # NASDAQ Capital Market
+        "LN": "LN Equity",  # London
+        "JT": "JP Equity",  # Tokyo
+        "GY": "GY Equity",  # Germany (Xetra)
+        "FP": "FP Equity",  # Paris
+        "IM": "IM Equity",  # Italy
+    }
+
+    def normalize_ticker(raw_ticker: str) -> str:
+        """Convert 'NVDA UW' format to 'NVDA US Equity'."""
+        if " " not in raw_ticker:
+            # Already normalized or simple ticker
+            if raw_ticker.endswith(" Equity") or raw_ticker.endswith(" Index"):
+                return raw_ticker
+            return f"{raw_ticker} US Equity"  # Default to US Equity
+
+        parts = raw_ticker.rsplit(" ", 1)
+        if len(parts) == 2:
+            ticker, exchange = parts
+            bloomberg_suffix = EXCHANGE_TO_BLOOMBERG.get(exchange, "US Equity")
+            return f"{ticker} {bloomberg_suffix}"
+        return raw_ticker
+
     securities = []
     if isinstance(members, list):
         for member in members:
             if isinstance(member, dict):
                 ticker = member.get("Member Ticker and Exchange Code")
                 if ticker:
-                    securities.append(ticker)
+                    securities.append(normalize_ticker(ticker))
             elif isinstance(member, str):
-                securities.append(member)
+                securities.append(normalize_ticker(member))
 
     return securities

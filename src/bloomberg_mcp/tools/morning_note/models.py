@@ -178,6 +178,9 @@ class MacroSnapshot(BaseModel):
     brent: Optional[MacroInstrument] = None
     gold: MacroInstrument
 
+    # Volatility (Beta: added 2024-12-23)
+    vix: Optional[MacroInstrument] = Field(default=None, description="CBOE VIX Index")
+
 
 # =============================================================================
 # JAPAN-SPECIFIC DATA

@@ -62,10 +62,12 @@ from .models import (
     ScreenUniverse,
     FieldSet,
     FieldSets,
+    NamedUniverses,
     ScreenResult,
     SecurityRecord,
     SignalReport,
     SignalType,
+    UniverseType,
 )
 
 from .filters import (
@@ -100,6 +102,8 @@ __all__ = [
 
     # Universe and field configuration
     "ScreenUniverse",
+    "NamedUniverses",
+    "UniverseType",
     "FieldSet",
     "FieldSets",
 

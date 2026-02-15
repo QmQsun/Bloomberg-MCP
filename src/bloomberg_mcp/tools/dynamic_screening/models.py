@@ -415,6 +415,144 @@ class FieldSets:
 
 
 # =============================================================================
+# NAMED UNIVERSES - Pre-defined security lists for common screening use cases
+# =============================================================================
+
+class NamedUniverses:
+    """Pre-defined universes for common screening scenarios.
+
+    These are curated lists that enable semantic universe selection
+    without requiring the LLM to know specific ticker symbols.
+
+    Example:
+        >>> from bloomberg_mcp.tools.dynamic_screening import NamedUniverses
+        >>> etfs = NamedUniverses.US_SECTOR_ETFS
+        >>> print(f"Found {len(etfs)} sector ETFs")
+    """
+
+    # US Sector ETFs (S&P GICS Sectors) - For sector hierarchy analysis
+    US_SECTOR_ETFS = [
+        "XLF US Equity",   # Financials
+        "XLK US Equity",   # Technology
+        "XLE US Equity",   # Energy
+        "XLI US Equity",   # Industrials
+        "XLY US Equity",   # Consumer Discretionary
+        "XLP US Equity",   # Consumer Staples
+        "XLV US Equity",   # Healthcare
+        "XLU US Equity",   # Utilities
+        "XLC US Equity",   # Communication Services
+        "XLRE US Equity",  # Real Estate
+        "XLB US Equity",   # Materials
+    ]
+
+    # Japan market proxies - For Japan sentiment/direction
+    JAPAN_PROXIES = [
+        "NKY Index",       # Nikkei 225 Index
+        "EWJ US Equity",   # iShares MSCI Japan ETF
+        "DXJ US Equity",   # WisdomTree Japan Hedged Equity
+        "USDJPY Curncy",   # USD/JPY exchange rate
+    ]
+
+    # Semiconductor leaders - For tech/semi read-through
+    SEMI_LEADERS = [
+        "NVDA US Equity",  # NVIDIA
+        "AMD US Equity",   # AMD
+        "AVGO US Equity",  # Broadcom
+        "QCOM US Equity",  # Qualcomm
+        "INTC US Equity",  # Intel
+        "MU US Equity",    # Micron
+        "AMAT US Equity",  # Applied Materials
+        "LRCX US Equity",  # Lam Research
+        "KLAC US Equity",  # KLA Corp
+        "ASML US Equity",  # ASML (Netherlands but US-listed ADR)
+    ]
+
+    # Semiconductor ETFs - For sector-level semi analysis
+    SEMI_ETFS = [
+        "SMH US Equity",   # VanEck Semiconductor ETF
+        "SOXX US Equity",  # iShares Semiconductor ETF
+        "XSD US Equity",   # SPDR S&P Semiconductor ETF
+    ]
+
+    # Macro indicators - For risk-on/risk-off context
+    MACRO_SNAPSHOT = [
+        "VIX Index",       # CBOE Volatility Index
+        "DXY Curncy",      # US Dollar Index
+        "USDJPY Curncy",   # USD/JPY
+        "US10YT=RR",       # US 10Y Treasury Yield (may need "GT10 Govt")
+        "CL1 Comdty",      # WTI Crude Oil Front Month
+        "GC1 Comdty",      # Gold Front Month
+    ]
+
+    # US Index ETFs - For broad market analysis
+    US_INDEX_ETFS = [
+        "SPY US Equity",   # S&P 500 ETF
+        "QQQ US Equity",   # Nasdaq 100 ETF
+        "IWM US Equity",   # Russell 2000 ETF
+        "DIA US Equity",   # Dow Jones ETF
+    ]
+
+    # Factor ETFs - For factor analysis
+    FACTOR_ETFS = [
+        "IWF US Equity",   # iShares Russell 1000 Growth
+        "IWD US Equity",   # iShares Russell 1000 Value
+        "MTUM US Equity",  # iShares MSCI USA Momentum
+        "QUAL US Equity",  # iShares MSCI USA Quality
+        "USMV US Equity",  # iShares MSCI USA Min Vol
+    ]
+
+    # Mega-cap tech - For tech leadership
+    MEGA_CAP_TECH = [
+        "AAPL US Equity",  # Apple
+        "MSFT US Equity",  # Microsoft
+        "GOOGL US Equity", # Alphabet
+        "AMZN US Equity",  # Amazon
+        "META US Equity",  # Meta
+        "NVDA US Equity",  # NVIDIA
+        "TSLA US Equity",  # Tesla
+    ]
+
+    # Japan ADR blue chips - Key Japan names with US ADRs
+    JAPAN_ADR_BLUECHIPS = [
+        "TM US Equity",    # Toyota
+        "SONY US Equity",  # Sony
+        "MUFG US Equity",  # Mitsubishi UFJ Financial
+        "SMFG US Equity",  # Sumitomo Mitsui Financial
+        "HMC US Equity",   # Honda
+        "NMR US Equity",   # Nomura
+        "MFG US Equity",   # Mizuho Financial
+        "NTDOY US Equity", # Nintendo (OTC)
+        "SNE US Equity",   # Sony (alternate)
+    ]
+
+    @classmethod
+    def get(cls, name: str) -> List[str]:
+        """Get a named universe by name (case-insensitive).
+
+        Args:
+            name: Universe name (e.g., 'US_SECTOR_ETFS', 'JAPAN_PROXIES')
+
+        Returns:
+            List of security identifiers
+
+        Raises:
+            ValueError: If universe name not found
+        """
+        upper_name = name.upper().replace("-", "_").replace(" ", "_")
+        if hasattr(cls, upper_name):
+            return getattr(cls, upper_name)
+        raise ValueError(f"Unknown named universe: {name}. Available: {cls.list_names()}")
+
+    @classmethod
+    def list_names(cls) -> List[str]:
+        """List all available named universe names."""
+        return [
+            attr for attr in dir(cls)
+            if not attr.startswith('_') and attr.isupper()
+        ]
+
+
+# =============================================================================
 # UNIVERSE DEFINITIONS
 # =============================================================================
 
@@ -423,6 +561,8 @@ class UniverseType(Enum):
     STATIC = "static"           # Explicit list of securities
     SAVED_SCREEN = "screen"     # Bloomberg saved EQS screen
     INDEX = "index"             # Index constituents
+    NAMED = "named"             # Pre-defined named universe
+    CRITERIA = "criteria"       # Criteria-based (index + filter)
 
 
 @dataclass
@@ -433,6 +573,8 @@ class ScreenUniverse:
     - Static: An explicit list of securities
     - Saved Screen: Results from a Bloomberg EQS screen
     - Index: Constituents of an index (SPX, TOPIX, etc.)
+    - Named: Pre-defined named universe (US_SECTOR_ETFS, JAPAN_PROXIES, etc.)
+    - Criteria: Composite criteria (index + sector filter)
 
     Example:
         >>> # Static universe
@@ -445,12 +587,22 @@ class ScreenUniverse:
         >>>
         >>> # Index constituents
         >>> universe = ScreenUniverse.from_index("SPX Index")
+        >>>
+        >>> # Named universe
+        >>> universe = ScreenUniverse.from_name("US_SECTOR_ETFS")
+        >>>
+        >>> # Criteria-based (index filtered by sector)
+        >>> universe = ScreenUniverse.from_criteria(
+        ...     index="SPX Index",
+        ...     gics_sector="Financials"
+        ... )
     """
 
     type: UniverseType
-    source: str  # Screen name, index ticker, or "static"
+    source: str  # Screen name, index ticker, named universe, or "static"
     securities: List[str] = field(default_factory=list)
     screen_type: str = "PRIVATE"  # For saved screens
+    criteria: Dict[str, Any] = field(default_factory=dict)  # For criteria-based
 
     @classmethod
     def from_list(cls, securities: List[str]) -> "ScreenUniverse":
@@ -480,6 +632,65 @@ class ScreenUniverse:
         return cls(
             type=UniverseType.INDEX,
             source=index_ticker,
+        )
+
+    @classmethod
+    def from_name(cls, name: str) -> "ScreenUniverse":
+        """Create universe from a named pre-defined universe.
+
+        Args:
+            name: Named universe (e.g., 'US_SECTOR_ETFS', 'JAPAN_PROXIES')
+                  See NamedUniverses.list_names() for available options.
+
+        Returns:
+            ScreenUniverse with securities from the named universe
+        """
+        securities = NamedUniverses.get(name)
+        return cls(
+            type=UniverseType.NAMED,
+            source=name,
+            securities=securities,
+        )
+
+    @classmethod
+    def from_criteria(
+        cls,
+        index: Optional[str] = None,
+        gics_sector: Optional[str] = None,
+        gics_industry: Optional[str] = None,
+        security_type: Optional[str] = None,
+        **kwargs
+    ) -> "ScreenUniverse":
+        """Create universe from composite criteria.
+
+        This creates a universe that combines an index membership
+        with additional filters (like GICS sector). The filtering
+        happens at fetch time.
+
+        Args:
+            index: Index for base universe (e.g., "SPX Index")
+            gics_sector: GICS sector filter (e.g., "Financials")
+            gics_industry: GICS industry filter
+            security_type: Security type filter (e.g., "ETF")
+            **kwargs: Additional criteria
+
+        Returns:
+            ScreenUniverse with criteria for deferred resolution
+        """
+        criteria = {
+            "index": index,
+            "gics_sector": gics_sector,
+            "gics_industry": gics_industry,
+            "security_type": security_type,
+            **kwargs
+        }
+        # Remove None values
+        criteria = {k: v for k, v in criteria.items() if v is not None}
+
+        return cls(
+            type=UniverseType.CRITERIA,
+            source=f"criteria:{list(criteria.keys())}",
+            criteria=criteria,
         )
 
 

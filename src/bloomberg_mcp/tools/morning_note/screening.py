@@ -312,82 +312,6 @@ def calculate_sector_performance() -> Dict[str, float]:
 
 
 # =============================================================================
-# HYPOTHESIS TESTING SCREENS
-# =============================================================================
-
-def test_tech_momentum_hypothesis() -> Optional[SignalReport]:
-    """Test hypothesis: Tech sector showing momentum leadership.
-
-    Returns:
-        SignalReport if hypothesis is supported, None otherwise
-    """
-    screen = (
-        DynamicScreen("Tech Momentum Test")
-        .universe_from_screen("Japan_Liquid_ADRs")
-        .with_fields(FieldSets.MOMENTUM + FieldSets.SECTOR + FieldSets.RVOL)
-        .filter(
-            F.GICS_SECTOR_NAME == "Information Technology",
-            F.CHG_PCT_1D > 0,
-        )
-        .rank_by("CHG_PCT_1D", descending=True)
-        .test_hypothesis(
-            hypothesis="Tech sector showing momentum leadership overnight",
-            evidence_fields=["NEWS_SENTIMENT"],
-        )
-    )
-
-    return screen.generate_signal(SignalType.MOMENTUM_LEADER, confidence_threshold=0.3)
-
-
-def test_risk_off_hypothesis() -> Optional[SignalReport]:
-    """Test hypothesis: Risk-off environment (defensive outperformance).
-
-    Returns:
-        SignalReport if hypothesis is supported, None otherwise
-    """
-    screen = (
-        DynamicScreen("Risk-Off Test")
-        .universe_from_screen("Japan_Liquid_ADRs")
-        .with_fields(FieldSets.MOMENTUM + FieldSets.SECTOR)
-        .filter(
-            F.GICS_SECTOR_NAME.in_(["Utilities", "Consumer Staples", "Health Care"]),
-            F.CHG_PCT_1D > 0,
-        )
-        .rank_by("CHG_PCT_1D", descending=True)
-        .test_hypothesis(
-            hypothesis="Defensive sectors outperforming suggests risk-off sentiment",
-        )
-    )
-
-    return screen.generate_signal(SignalType.MOMENTUM_LEADER, confidence_threshold=0.4)
-
-
-def test_volume_conviction_hypothesis(
-    rvol_threshold: float = 3.0
-) -> Optional[SignalReport]:
-    """Test hypothesis: High volume moves have conviction.
-
-    Returns:
-        SignalReport if hypothesis is supported, None otherwise
-    """
-    screen = (
-        DynamicScreen("Volume Conviction Test")
-        .universe_from_screen("Japan_Liquid_ADRs")
-        .with_fields(FieldSets.RVOL + FieldSets.MOMENTUM)
-        .filter(
-            F.rvol > rvol_threshold,
-            F.CHG_PCT_1D > 2.0,  # Significant move
-        )
-        .rank_by("rvol", descending=True)
-        .test_hypothesis(
-            hypothesis="High volume moves (>3x RVOL, >2% change) indicate conviction",
-        )
-    )
-
-    return screen.generate_signal(SignalType.HIGH_RVOL_UP, confidence_threshold=0.2)
-
-
-# =============================================================================
 # CONVENIENCE EXPORTS
 # =============================================================================
 
@@ -398,7 +322,4 @@ __all__ = [
     "get_volume_leaders",
     "get_momentum_extremes",
     "calculate_sector_performance",
-    "test_tech_momentum_hypothesis",
-    "test_risk_off_hypothesis",
-    "test_volume_conviction_hypothesis",
 ]

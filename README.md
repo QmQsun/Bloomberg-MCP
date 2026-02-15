@@ -1,5 +1,8 @@
 # Bloomberg MCP
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+
 Data access layer for Bloomberg Terminal via the Bloomberg API (blpapi).
 
 ## Installation
@@ -139,6 +142,22 @@ See [CLAUDE.md](CLAUDE.md) for:
 - Bloomberg C++ SDK
 - blpapi Python SDK
 
+## Contributing
+
+Contributions are welcome! Please open an issue or submit a pull request.
+
+```bash
+# Install dev dependencies
+pip install -e ".[dev]"
+
+# Run tests
+pytest
+
+# Format code
+black src/ tests/
+ruff check src/ tests/
+```
+
 ## License
 
-MIT
+MIT - see [LICENSE](LICENSE) for details.

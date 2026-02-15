@@ -15,6 +15,7 @@ from .config import (
     MACRO_FX,
     MACRO_RATES,
     MACRO_COMMODITIES,
+    MACRO_VOLATILITY,
     PRICE_FIELDS,
     VOLUME_FIELDS,
     MACRO_FIELDS,
@@ -210,13 +211,19 @@ def _fetch_industry_data() -> Dict[str, List[IndustrySnapshot]]:
 
 
 def _fetch_macro_data() -> MacroSnapshot:
-    """Fetch and structure macro data (FX, rates, commodities)."""
+    """Fetch and structure macro data (FX, rates, commodities, volatility)."""
     # Collect all macro tickers
     fx_tickers = {k: v.ticker for k, v in MACRO_FX.items()}
     rate_tickers = {k: v.ticker for k, v in MACRO_RATES.items()}
     commodity_tickers = {k: v.ticker for k, v in MACRO_COMMODITIES.items()}
+    volatility_tickers = {k: v.ticker for k, v in MACRO_VOLATILITY.items()}
 
-    all_tickers = list(fx_tickers.values()) + list(rate_tickers.values()) + list(commodity_tickers.values())
+    all_tickers = (
+        list(fx_tickers.values()) +
+        list(rate_tickers.values()) +
+        list(commodity_tickers.values()) +
+        list(volatility_tickers.values())
+    )
 
     # Fetch data
     results = get_reference_data(all_tickers, MACRO_FIELDS)
@@ -259,6 +266,9 @@ def _fetch_macro_data() -> MacroSnapshot:
     brent = get_macro(MACRO_COMMODITIES["brent"].ticker, MACRO_COMMODITIES["brent"].name) if "brent" in MACRO_COMMODITIES else None
     gold = get_macro(MACRO_COMMODITIES["gold"].ticker, MACRO_COMMODITIES["gold"].name)
 
+    # Build Volatility (Beta feature)
+    vix = get_macro(MACRO_VOLATILITY["vix"].ticker, MACRO_VOLATILITY["vix"].name) if "vix" in MACRO_VOLATILITY else None
+
     return MacroSnapshot(
         dxy=dxy,
         usdjpy=usdjpy,
@@ -269,4 +279,5 @@ def _fetch_macro_data() -> MacroSnapshot:
         wti=wti,
         brent=brent,
         gold=gold,
+        vix=vix,
     )

@@ -66,6 +66,13 @@ def store_session_snapshot(
         us_10y = us_snapshot.macro.yields.us_10y
         us_10y_change = us_snapshot.macro.us_10y_change_pct
 
+        # Extended macro (Beta fields)
+        vix_close = us_snapshot.macro.vix.last if us_snapshot.macro.vix else None
+        vix_change = us_snapshot.macro.vix.change_pct if us_snapshot.macro.vix else None
+        gold_close = us_snapshot.macro.gold.last if us_snapshot.macro.gold else None
+        gold_change = us_snapshot.macro.gold.change_pct if us_snapshot.macro.gold else None
+        us_2y_yield = us_snapshot.macro.yields.us_2y if us_snapshot.macro.yields else None
+
         # Japan metrics
         nk_futures_change = None
         ewj_change = None
@@ -78,7 +85,7 @@ def store_session_snapshot(
             ewj_otc = japan_snapshot.proxies.ewj_open_to_close_pct
             futures_ewj_div = japan_snapshot.proxies.futures_vs_ewj_divergence
 
-        # Store main snapshot
+        # Store main snapshot (includes Beta fields)
         conn.execute("""
             INSERT OR REPLACE INTO session_snapshots (
                 session_date, captured_at,
@@ -89,8 +96,11 @@ def store_session_snapshot(
                 us_10y_level, us_10y_change_bps,
                 nikkei_futures_change_pct, ewj_change_pct,
                 ewj_open_to_close_pct, futures_ewj_divergence,
-                session_character
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                session_character,
+                vix_close, vix_change_pct,
+                gold_close, gold_change_pct,
+                us_2y_yield
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             session_date,
             datetime.now().isoformat(),
@@ -110,6 +120,11 @@ def store_session_snapshot(
             ewj_otc,
             futures_ewj_div,
             session_character,
+            vix_close,
+            vix_change,
+            gold_close,
+            gold_change,
+            us_2y_yield,
         ))
 
         # Store sector daily data

@@ -46,6 +46,11 @@ MACRO_COMMODITIES: Dict[str, SecurityDef] = {
     "gold": SecurityDef("GC1 Comdty", "Gold"),
 }
 
+# Volatility Indexes
+MACRO_VOLATILITY: Dict[str, SecurityDef] = {
+    "vix": SecurityDef("VIX Index", "CBOE Volatility Index"),
+}
+
 # S&P Sector ETFs (GICS)
 SECTOR_ETFS: List[SecurityDef] = [
     SecurityDef("XLK US Equity", "Technology", "tech"),

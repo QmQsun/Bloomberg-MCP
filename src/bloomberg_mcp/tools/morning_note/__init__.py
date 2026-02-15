@@ -121,9 +121,6 @@ from .screening import (
     get_volume_leaders,
     get_momentum_extremes,
     calculate_sector_performance,
-    test_tech_momentum_hypothesis,
-    test_risk_off_hypothesis,
-    test_volume_conviction_hypothesis,
 )
 
 # Re-export config for customization
@@ -155,9 +152,6 @@ __all__ = [
     "get_volume_leaders",
     "get_momentum_extremes",
     "calculate_sector_performance",
-    "test_tech_momentum_hypothesis",
-    "test_risk_off_hypothesis",
-    "test_volume_conviction_hypothesis",
     # Historical context - structured
     "get_historical_context",
     "get_sector_streaks",

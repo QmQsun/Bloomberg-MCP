@@ -39,6 +39,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Union
 from .models import (
     FieldSet,
     FieldSets,
+    NamedUniverses,
     ScreenUniverse,
     ScreenResult,
     SecurityRecord,
@@ -147,6 +148,69 @@ class DynamicScreen:
             Self for chaining
         """
         self._universe = ScreenUniverse.from_index(index_ticker)
+        return self
+
+    def universe_from_name(self, name: str) -> "DynamicScreen":
+        """Set universe from a named pre-defined universe.
+
+        Named universes provide semantic access to curated security lists
+        without requiring knowledge of specific ticker symbols.
+
+        Args:
+            name: Named universe. Available options:
+                - US_SECTOR_ETFS: 11 S&P sector ETFs (XLF, XLK, etc.)
+                - JAPAN_PROXIES: NKY Index, EWJ, DXJ, USDJPY
+                - SEMI_LEADERS: Top 10 semiconductor stocks
+                - SEMI_ETFS: SMH, SOXX, XSD
+                - MACRO_SNAPSHOT: VIX, DXY, USDJPY, yields, commodities
+                - US_INDEX_ETFS: SPY, QQQ, IWM, DIA
+                - FACTOR_ETFS: Growth, Value, Momentum, Quality, MinVol
+                - MEGA_CAP_TECH: AAPL, MSFT, GOOGL, AMZN, META, NVDA, TSLA
+                - JAPAN_ADR_BLUECHIPS: TM, SONY, MUFG, SMFG, HMC, etc.
+
+        Returns:
+            Self for chaining
+
+        Example:
+            >>> screen = DynamicScreen("US Sectors").universe_from_name("US_SECTOR_ETFS")
+        """
+        self._universe = ScreenUniverse.from_name(name)
+        return self
+
+    def universe_from_criteria(
+        self,
+        index: Optional[str] = None,
+        gics_sector: Optional[str] = None,
+        gics_industry: Optional[str] = None,
+        **kwargs
+    ) -> "DynamicScreen":
+        """Set universe from composite criteria (index + filters).
+
+        This combines index membership with sector/industry filters.
+        Useful for screening a subset of an index.
+
+        Args:
+            index: Base index (e.g., "SPX Index")
+            gics_sector: GICS sector filter (e.g., "Financials")
+            gics_industry: GICS industry filter
+            **kwargs: Additional criteria
+
+        Returns:
+            Self for chaining
+
+        Example:
+            >>> # Screen S&P 500 Financials
+            >>> screen = DynamicScreen("SPX Financials").universe_from_criteria(
+            ...     index="SPX Index",
+            ...     gics_sector="Financials"
+            ... )
+        """
+        self._universe = ScreenUniverse.from_criteria(
+            index=index,
+            gics_sector=gics_sector,
+            gics_industry=gics_industry,
+            **kwargs
+        )
         return self
 
     # =========================================================================
@@ -448,7 +512,56 @@ class DynamicScreen:
         elif self._universe.type == UniverseType.INDEX:
             return get_index_constituents(self._universe.source)
 
+        elif self._universe.type == UniverseType.NAMED:
+            # Named universes already have securities populated
+            return self._universe.securities
+
+        elif self._universe.type == UniverseType.CRITERIA:
+            # Criteria-based: resolve base universe, then filter by criteria
+            return self._resolve_criteria_universe()
+
         return []
+
+    def _resolve_criteria_universe(self) -> List[str]:
+        """Resolve criteria-based universe with filtering.
+
+        Gets base universe from index, then filters by GICS sector/industry.
+        """
+        criteria = self._universe.criteria
+        securities = []
+
+        # Step 1: Get base universe
+        if "index" in criteria:
+            securities = get_index_constituents(criteria["index"])
+        else:
+            # No base index - this is a broad search, not currently supported
+            logger.warning("Criteria-based universe requires 'index' parameter")
+            return []
+
+        # Step 2: If we have sector/industry filters, we need to fetch
+        # GICS data and filter. We'll add these as implicit filters
+        # that run during the screen execution.
+        if "gics_sector" in criteria or "gics_industry" in criteria:
+            # Add GICS fields to the screen's fields if not already present
+            if "GICS_SECTOR_NAME" not in self._fields:
+                self._fields.append("GICS_SECTOR_NAME")
+            if "gics_industry" in criteria and "GICS_INDUSTRY_NAME" not in self._fields:
+                self._fields.append("GICS_INDUSTRY_NAME")
+
+            # Add implicit filters for GICS criteria
+            # These will be applied after data fetch
+            from .filters import ComparisonFilter
+
+            if "gics_sector" in criteria:
+                self._filters.append(
+                    ComparisonFilter("GICS_SECTOR_NAME", "eq", criteria["gics_sector"])
+                )
+            if "gics_industry" in criteria:
+                self._filters.append(
+                    ComparisonFilter("GICS_INDUSTRY_NAME", "eq", criteria["gics_industry"])
+                )
+
+        return securities
 
     # =========================================================================
     # SIGNAL GENERATION

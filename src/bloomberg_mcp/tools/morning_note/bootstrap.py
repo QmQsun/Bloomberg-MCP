@@ -58,7 +58,17 @@ CREATE TABLE IF NOT EXISTS session_snapshots (
     ewj_open_to_close_pct REAL,
     futures_ewj_divergence REAL,
 
-    session_character TEXT
+    session_character TEXT,
+
+    -- Beta: Extended market context (added 2024-12-23)
+    vix_close REAL,
+    vix_change_pct REAL,
+    gold_close REAL,
+    gold_change_pct REAL,
+    us_2y_yield REAL,
+    intraday_character TEXT,
+    spx_intraday_range_pct REAL,
+    volume_vs_20d_avg REAL
 );
 
 CREATE INDEX IF NOT EXISTS idx_session_date ON session_snapshots(session_date);
@@ -142,7 +152,16 @@ CREATE TABLE IF NOT EXISTS notes_archive (
     us_session_section TEXT,
     macro_section TEXT,
     japan_section TEXT,
-    opening_bell_section TEXT
+    opening_bell_section TEXT,
+
+    -- Beta: Enhanced metadata (added 2024-12-23)
+    hypotheses_tested INTEGER DEFAULT 0,
+    hypotheses_confirmed INTEGER DEFAULT 0,
+    key_tickers TEXT,
+    execution_time_seconds REAL,
+    model_used TEXT,
+    risk_tone TEXT,
+    session_type TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_notes_date ON notes_archive(session_date);
@@ -170,6 +189,32 @@ CREATE TABLE IF NOT EXISTS thematic_regimes (
 );
 
 CREATE INDEX IF NOT EXISTS idx_theme_regime ON thematic_regimes(theme, start_date DESC);
+
+-- News events table - stores classified news for morning note context
+-- Shared with news-mcp for historical news queries
+CREATE TABLE IF NOT EXISTS news_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_date DATE NOT NULL,           -- Session this news was collected for
+    news_type TEXT NOT NULL,              -- macro, central_bank, sector, thematic, after_hours
+    headline TEXT NOT NULL,
+    summary TEXT,
+    source TEXT,                          -- bloomberg.com, reuters.com, etc.
+    source_url TEXT,
+    tickers_json TEXT,                    -- JSON array of tickers mentioned
+    sectors_json TEXT,                    -- JSON array of sectors affected
+    themes_json TEXT,                     -- JSON array of themes
+    sentiment TEXT,                       -- positive, negative, neutral, mixed
+    japan_relevance REAL,                 -- 0-1 score for Japan equity relevance
+    japan_readthroughs_json TEXT,         -- JSON of Japan ticker mappings
+    published_date TIMESTAMP,             -- Actual article publication date (when available)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    UNIQUE(session_date, headline)        -- Prevent duplicates
+);
+
+CREATE INDEX IF NOT EXISTS idx_news_events_date ON news_events(session_date);
+CREATE INDEX IF NOT EXISTS idx_news_events_type ON news_events(news_type);
+CREATE INDEX IF NOT EXISTS idx_news_events_sentiment ON news_events(sentiment);
 """
 
 

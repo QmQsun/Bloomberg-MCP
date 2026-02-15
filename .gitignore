@@ -47,6 +47,16 @@ Thumbs.db
 *.log
 nul
 
+# Environment
+.env
+.env.*
+
+# Claude Code
+.claude/
+
+# Lock files (library — consumers manage their own locks)
+uv.lock
+
 # Vendor libraries (install separately)
 blpapi_cpp/
 blpapi_python/
