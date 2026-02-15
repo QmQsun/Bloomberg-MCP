@@ -1,9 +1,12 @@
 """Bloomberg API session management with singleton pattern."""
 
+import logging
 import threading
 from typing import List, Optional, Dict, Any
 
 import blpapi
+
+logger = logging.getLogger(__name__)
 
 from .responses import (
     parse_reference_data_response,
@@ -89,14 +92,14 @@ class BloombergSession:
             self._session = blpapi.Session(session_options)
 
             if not self._session.start():
-                print("Failed to start Bloomberg session")
+                logger.error("Failed to start Bloomberg session")
                 return False
 
             self._connected = True
             return True
 
         except Exception as e:
-            print(f"Error connecting to Bloomberg API: {e}")
+            logger.error("Error connecting to Bloomberg API: %s", e)
             return False
 
     def disconnect(self) -> None:
@@ -105,7 +108,7 @@ class BloombergSession:
             try:
                 self._session.stop()
             except Exception as e:
-                print(f"Error disconnecting from Bloomberg API: {e}")
+                logger.error("Error disconnecting from Bloomberg API: %s", e)
             finally:
                 self._session = None
                 self._services.clear()
@@ -140,7 +143,7 @@ class BloombergSession:
         # Open the service
         try:
             if not self._session.openService(service_name):
-                print(f"Failed to open service: {service_name}")
+                logger.error("Failed to open service: %s", service_name)
                 return None
 
             service = self._session.getService(service_name)
@@ -148,7 +151,7 @@ class BloombergSession:
             return service
 
         except Exception as e:
-            print(f"Error opening service {service_name}: {e}")
+            logger.error("Error opening service %s: %s", service_name, e)
             return None
 
     def send_request(
@@ -229,7 +232,7 @@ class BloombergSession:
                             raise RuntimeError("Session terminated")
 
         except Exception as e:
-            print(f"Error sending request: {e}")
+            logger.error("Error sending request: %s", e)
             raise
 
         return results

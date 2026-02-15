@@ -12,6 +12,41 @@ Quick Start:
     # Get historical data
     hist = get_historical_data(["SPY US Equity"], ["PX_LAST"], "20240101", "20241231")
 
+Morning Notes:
+    from bloomberg_mcp.tools import get_us_session_snapshot, get_japan_overnight_snapshot
+
+    us = get_us_session_snapshot()
+    jp = get_japan_overnight_snapshot()
+
+Dynamic Screening:
+    from bloomberg_mcp.tools.dynamic_screening import (
+        DynamicScreen, FieldSets, F, MorningNoteScreens
+    )
+
+    # Build and run a custom screen
+    result = (
+        DynamicScreen("High RVOL ADRs")
+        .universe_from_screen("Japan_Liquid_ADRs")
+        .with_fields(FieldSets.RVOL + FieldSets.MOMENTUM)
+        .filter(F.rvol > 2.0, F.CHG_PCT_1D > 0)
+        .rank_by("rvol", descending=True)
+        .top(10)
+        .run()
+    )
+
+    # Or use pre-configured screens
+    result = MorningNoteScreens.high_rvol_adrs().run()
+
+Historical Context:
+    from bloomberg_mcp.tools.morning_note import (
+        get_historical_context,
+        find_similar_sessions,
+        store_session_snapshot,
+    )
+
+    ctx = get_historical_context()
+    similar = find_similar_sessions({"breadth_spread": {"gt": 0.8}})
+
 See CLAUDE.md for full API reference and usage patterns.
 """
 
@@ -22,6 +57,7 @@ from .core import (
     HistoricalDataPoint,
     IntradayBar,
     IntradayBarData,
+    ScreenResult,
 )
 
 from .tools import (
@@ -32,7 +68,28 @@ from .tools import (
     search_securities,
     search_fields,
     get_field_info,
+    run_screen,
+    # Morning note tools
+    get_us_session_snapshot,
+    get_japan_overnight_snapshot,
+    get_japan_watchlist,
 )
+
+# Morning note models (for type hints)
+from .tools.morning_note import (
+    USSessionSnapshot,
+    JapanOvernightSnapshot,
+    # Historical context
+    HistoricalContext,
+    get_historical_context,
+    find_similar_sessions,
+    query_sessions,
+    store_session_snapshot,
+    init_database,
+)
+
+# Dynamic screening (lazy import to avoid circular deps)
+# Use: from bloomberg_mcp.tools.dynamic_screening import DynamicScreen, F, FieldSets
 
 __version__ = "0.1.0"
 
@@ -45,6 +102,7 @@ __all__ = [
     "HistoricalDataPoint",
     "IntradayBar",
     "IntradayBarData",
+    "ScreenResult",
     # Tools (convenience re-export)
     "get_reference_data",
     "get_historical_data",
@@ -53,4 +111,19 @@ __all__ = [
     "search_securities",
     "search_fields",
     "get_field_info",
+    "run_screen",
+    # Morning note tools
+    "get_us_session_snapshot",
+    "get_japan_overnight_snapshot",
+    "get_japan_watchlist",
+    # Morning note models
+    "USSessionSnapshot",
+    "JapanOvernightSnapshot",
+    # Historical context
+    "HistoricalContext",
+    "get_historical_context",
+    "find_similar_sessions",
+    "query_sessions",
+    "store_session_snapshot",
+    "init_database",
 ]

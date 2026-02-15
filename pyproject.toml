@@ -28,7 +28,14 @@ classifiers = [
 # blpapi must be installed separately:
 # 1. Set BLPAPI_ROOT to C++ SDK path
 # 2. pip install -e ../blpapi-3.25.7.1
-dependencies = []
+dependencies = [
+    "mcp>=1.0.0",
+    "pydantic>=2.0.0",
+    "httpx>=0.25.0",
+]
+
+[project.scripts]
+bloomberg-mcp = "bloomberg_mcp.server:main"
 
 [project.optional-dependencies]
 dev = [
@@ -40,8 +47,8 @@ dev = [
 ]
 
 [project.urls]
-Documentation = "https://github.com/yourusername/bloomberg-mcp#readme"
-Source = "https://github.com/yourusername/bloomberg-mcp"
+Documentation = "https://github.com/tallinn102/bloomberg-mcp#readme"
+Source = "https://github.com/tallinn102/bloomberg-mcp"
 
 [tool.setuptools.packages.find]
 where = ["src"]

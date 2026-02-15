@@ -47,6 +47,21 @@ class IntradayBar:
 
 
 @dataclass
+class ScreenResult:
+    """Represents results from a Bloomberg equity screen (BEQS).
+
+    Contains the list of securities matching the screen criteria along with
+    any output fields defined in the screen.
+    """
+
+    screen_name: str
+    securities: List[str] = field(default_factory=list)
+    field_data: List[Dict[str, Any]] = field(default_factory=list)
+    columns: List[str] = field(default_factory=list)
+    errors: List[str] = field(default_factory=list)
+
+
+@dataclass
 class IntradayBarData:
     """Represents intraday bar data for a single security."""
 
@@ -340,5 +355,62 @@ def parse_field_info_response(msg: blpapi.Message) -> List[Dict[str, Any]]:
     fields = msg_dict.get("fieldData", [])
     for field_info in fields:
         result.append(field_info)
+
+    return result
+
+
+def parse_beqs_response(msg: blpapi.Message, screen_name: str) -> ScreenResult:
+    """
+    Parse a BeqsResponse message into a ScreenResult object.
+
+    Args:
+        msg: Bloomberg API message containing BEQS response
+        screen_name: Name of the screen that was run
+
+    Returns:
+        ScreenResult object with securities and field data
+    """
+    result = ScreenResult(screen_name=screen_name)
+
+    # Check for response-level errors
+    if msg.hasElement(RESPONSE_ERROR):
+        error_elem = msg.getElement(RESPONSE_ERROR)
+        result.errors.append(str(error_elem))
+        return result
+
+    # Use toPy() to convert message to dict
+    msg_dict = msg.toPy()
+
+    if "responseError" in msg_dict:
+        result.errors.append(str(msg_dict["responseError"]))
+        return result
+
+    # Handle nested data structure - response may have data.securityData
+    data = msg_dict.get("data", msg_dict)
+    security_data = data.get("securityData", [])
+
+    if not isinstance(security_data, list):
+        return result
+
+    # Extract columns from first security's fieldData
+    if security_data and "fieldData" in security_data[0]:
+        result.columns = list(security_data[0]["fieldData"].keys())
+
+    # Extract securities and field data
+    for sec in security_data:
+        ticker = sec.get("security", "")
+        if ticker:
+            result.securities.append(ticker)
+
+            # Include full record with security and fields
+            record = {"security": ticker}
+            field_data = sec.get("fieldData", {})
+            record.update(field_data)
+
+            # Include any field exceptions
+            if sec.get("fieldExceptions"):
+                record["_fieldExceptions"] = sec["fieldExceptions"]
+
+            result.field_data.append(record)
 
     return result

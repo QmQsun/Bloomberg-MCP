@@ -60,6 +60,12 @@ EXCLUDE = blpapi.Name("exclude")
 # Field Info Request Names
 ID = blpapi.Name("id")
 
+# BEQS (Bloomberg Equity Screening) Request Names
+SCREEN_NAME = blpapi.Name("screenName")
+SCREEN_TYPE = blpapi.Name("screenType")
+GROUP = blpapi.Name("Group")
+LANGUAGE_ID = blpapi.Name("languageId")
+
 
 def build_reference_data_request(
     service: blpapi.Service,
@@ -436,6 +442,59 @@ def build_field_info_request(
     return request
 
 
+def build_beqs_request(
+    service: blpapi.Service,
+    screen_name: str,
+    screen_type: str = "PRIVATE",
+    group: Optional[str] = None,
+    language_id: Optional[str] = None,
+) -> blpapi.Request:
+    """Build a BeqsRequest for running Bloomberg equity screens.
+
+    This request runs a pre-saved equity screen from Bloomberg EQS and returns
+    the list of securities matching the screen criteria along with any output
+    fields defined in the screen.
+
+    Args:
+        service: The opened //blp/refdata service
+        screen_name: Name of the saved screen (e.g., "Japan_ADR_Universe")
+        screen_type: Type of screen - one of:
+            "PRIVATE" - User's personal saved screens (default)
+            "GLOBAL" - Bloomberg's pre-defined example screens
+        group: Optional folder/group name if screen is organized in folders
+        language_id: Optional language identifier for localized screens
+
+    Returns:
+        A configured blpapi.Request object ready to send
+
+    Example:
+        >>> service = session.getService("//blp/refdata")
+        >>> request = build_beqs_request(
+        ...     service,
+        ...     "Japan_ADR_Universe",
+        ...     screen_type="PRIVATE"
+        ... )
+
+    Note:
+        Screens must be created and saved in Bloomberg Terminal EQS <GO>
+        before they can be accessed via API. The screen name must match
+        exactly as saved.
+    """
+    request = service.createRequest("BeqsRequest")
+
+    # Build request using set() since BeqsRequest doesn't support fromPy well
+    request.set(SCREEN_NAME, screen_name)
+    request.set(SCREEN_TYPE, screen_type)
+
+    if group is not None:
+        request.set(GROUP, group)
+
+    if language_id is not None:
+        request.set(LANGUAGE_ID, language_id)
+
+    return request
+
+
 __all__ = [
     "build_reference_data_request",
     "build_historical_data_request",
@@ -444,4 +503,5 @@ __all__ = [
     "build_instrument_search_request",
     "build_field_search_request",
     "build_field_info_request",
+    "build_beqs_request",
 ]

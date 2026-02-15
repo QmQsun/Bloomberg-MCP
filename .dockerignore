@@ -1,0 +1,32 @@
+.git
+.gitignore
+.pytest_cache
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+.env
+.env.*
+.venv
+venv
+tests
+examples
+*.md
+!README.md
+
+# Claude Code
+.claude/
+
+# Data files
+data/
+
+# Lock files
+uv.lock
+
+# Vendor subdirectories (keep roots for build)
+blpapi_python/venv
+blpapi_python/.git
+blpapi_python/.claude
+blpapi_python/examples
+blpapi_cpp/doc
+blpapi_cpp/examples
