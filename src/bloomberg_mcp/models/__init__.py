@@ -13,6 +13,7 @@ from .inputs import (
     GetUniverseInput,
     FilterSpec,
     DynamicScreenInput,
+    BulkDataInput,
     EconomicCalendarToolInput,
     EarningsCalendarToolInput,
 )
@@ -32,6 +33,7 @@ __all__ = [
     "GetUniverseInput",
     "FilterSpec",
     "DynamicScreenInput",
+    "BulkDataInput",
     "EconomicCalendarToolInput",
     "EarningsCalendarToolInput",
 ]

@@ -423,6 +423,50 @@ TIP: For small universes (<50), prefer ranking over strict filtering.
     )
 
 
+class BulkDataInput(BaseModel):
+    """Input for fetching Bloomberg bulk data (BDS).
+
+    BDS returns tabular/array data (e.g., top holders, dividend history,
+    supply chain) unlike BDP which returns single scalar values.
+    """
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    security: str = Field(
+        ...,
+        description="Single security identifier (e.g., 'AAPL US Equity')",
+        min_length=1
+    )
+    field: str = Field(
+        ...,
+        description="""BDS field name. Common fields:
+- TOP_20_HOLDERS_PUBLIC_FILINGS: Top 20 shareholders
+- DVD_HIST_ALL: Complete dividend history
+- SUPPLY_CHAIN_SUPPLIERS: Supplier list with revenue exposure
+- SUPPLY_CHAIN_CUSTOMERS: Customer list with revenue exposure
+- SUPPLY_CHAIN_COMPETITORS: Competitor list
+- INDX_MEMBERS: Index constituents
+- ANALYST_RECOMMENDATIONS: Analyst ratings detail
+- ERN_ANN_DT_AND_PER: Earnings announcement dates
+- BOARD_OF_DIRECTORS: Board members
+- EARN_ANN_DT_TIME_HIST_WITH_EPS: Historical earnings with actual EPS""",
+        min_length=1
+    )
+    overrides: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Optional field overrides as key-value pairs"
+    )
+    max_rows: int = Field(
+        default=100,
+        description="Maximum number of rows to return",
+        ge=1,
+        le=5000
+    )
+    response_format: ResponseFormat = Field(
+        default=ResponseFormat.JSON,
+        description="Output format: 'json' for structured data or 'markdown' for readable format"
+    )
+
+
 class EconomicCalendarToolInput(BaseModel):
     """Input for economic calendar query."""
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")

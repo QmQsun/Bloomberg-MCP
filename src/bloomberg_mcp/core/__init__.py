@@ -9,6 +9,7 @@ For most use cases, import from bloomberg_mcp.tools instead.
 """
 
 from .session import BloombergSession
+from .cache import BloombergCache, CacheTTL
 from .responses import (
     # Data types
     SecurityData,
@@ -31,6 +32,9 @@ from .responses import (
 __all__ = [
     # Session
     "BloombergSession",
+    # Cache
+    "BloombergCache",
+    "CacheTTL",
     # Data types
     "SecurityData",
     "HistoricalData",

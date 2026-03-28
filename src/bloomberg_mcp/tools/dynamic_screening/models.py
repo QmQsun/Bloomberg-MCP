@@ -413,6 +413,79 @@ class FieldSets:
         "GICS_SECTOR_NAME",
     ])
 
+    # ==========================================================================
+    # FUNDAMENTAL FIELD SETS (generic, universally applicable)
+    # ==========================================================================
+
+    # Consensus estimates
+    ESTIMATES_CONSENSUS = FieldSet("estimates_consensus", [
+        "BEST_EPS", "BEST_EPS_MEDIAN", "BEST_EPS_4WK_CHG",
+        "BEST_SALES", "BEST_SALES_4WK_CHG", "BEST_EBITDA",
+        "EQY_REC_CONS", "BEST_TARGET_PRICE", "BEST_EPS_SURPRISE",
+        "BEST_EST_LONG_TERM_GROWTH",
+    ])
+
+    # Profitability
+    PROFITABILITY = FieldSet("profitability", [
+        "GROSS_MARGIN", "OPER_MARGIN", "PROF_MARGIN",
+        "RETURN_ON_EQUITY", "RETURN_ON_ASSET", "RETURN_ON_INV_CAPITAL",
+        "EBITDA_MARGIN",
+    ])
+
+    # Cash flow quality
+    CASH_FLOW = FieldSet("cash_flow", [
+        "FREE_CASH_FLOW_YIELD", "CF_FREE_CASH_FLOW",
+        "CASH_FLOW_FROM_OPERATIONS", "NET_INCOME",
+        "IS_COMP_SALES", "EBITDA",
+    ])
+
+    # Balance sheet / leverage
+    BALANCE_SHEET = FieldSet("balance_sheet", [
+        "TOT_DEBT_TO_TOT_EQY", "INTEREST_COVERAGE_RATIO",
+        "CUR_RATIO", "QUICK_RATIO",
+        "TOT_DEBT_TO_EBITDA", "NET_DEBT",
+    ])
+
+    # Ownership
+    OWNERSHIP = FieldSet("ownership", [
+        "PCT_HELD_BY_INSIDERS", "PCT_HELD_BY_INSTITUTIONS",
+        "NUM_OF_INSTITUTIONAL_HOLDERS",
+        "SHORT_INT_RATIO", "PUT_CALL_OPEN_INTEREST_RATIO",
+    ])
+
+    # ESG / Governance
+    GOVERNANCE = FieldSet("governance", [
+        "ESG_DISCLOSURE_SCORE", "ENVIRON_DISCLOSURE_SCORE",
+        "SOCIAL_DISCLOSURE_SCORE", "GOVNCE_DISCLOSURE_SCORE",
+    ])
+
+    # Risk metrics
+    RISK = FieldSet("risk", [
+        "BETA_RAW_OVERRIDABLE", "VOLATILITY_10D", "VOLATILITY_30D",
+        "VOLATILITY_90D", "VOLATILITY_260D",
+        "CUR_MKT_CAP",
+    ])
+
+    # Comprehensive valuation
+    VALUATION_EXTENDED = FieldSet("valuation_extended", [
+        "PE_RATIO", "BEST_PE_RATIO", "PX_TO_BOOK_RATIO",
+        "PX_TO_SALES_RATIO", "EV_TO_T12M_EBITDA",
+        "PX_TO_FREE_CASH_FLOW", "DVD_PRCNT_YLD",
+        "ENTERPRISE_VALUE", "CUR_MKT_CAP",
+    ])
+
+    # Earnings surprise
+    EARNINGS_SURPRISE = FieldSet("earnings_surprise", [
+        "BEST_EPS", "IS_EPS", "BEST_EPS_SURPRISE",
+        "BEST_SALES", "SALES_REV_TURN", "BEST_SALES_SURPRISE",
+    ])
+
+    # Growth
+    GROWTH = FieldSet("growth", [
+        "SALES_GROWTH", "EPS_GROWTH", "EBITDA_GROWTH",
+        "BEST_EST_LONG_TERM_GROWTH",
+    ])
+
 
 # =============================================================================
 # NAMED UNIVERSES - Pre-defined security lists for common screening use cases

@@ -35,6 +35,17 @@ def _get_fieldset_map():
         "ANALYST": FieldSets.ANALYST,
         "CLASSIFICATION": FieldSets.CLASSIFICATION,
         "DESCRIPTIVE": FieldSets.DESCRIPTIVE,
+        # Fundamental FieldSets (PHASE 1)
+        "ESTIMATES_CONSENSUS": FieldSets.ESTIMATES_CONSENSUS,
+        "PROFITABILITY": FieldSets.PROFITABILITY,
+        "CASH_FLOW": FieldSets.CASH_FLOW,
+        "BALANCE_SHEET": FieldSets.BALANCE_SHEET,
+        "OWNERSHIP": FieldSets.OWNERSHIP,
+        "GOVERNANCE": FieldSets.GOVERNANCE,
+        "RISK": FieldSets.RISK,
+        "VALUATION_EXTENDED": FieldSets.VALUATION_EXTENDED,
+        "EARNINGS_SURPRISE": FieldSets.EARNINGS_SURPRISE,
+        "GROWTH": FieldSets.GROWTH,
     }
 
 
