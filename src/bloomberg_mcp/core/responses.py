@@ -62,6 +62,24 @@ class ScreenResult:
 
 
 @dataclass
+class StudyDataPoint:
+    """Represents a single technical analysis data point from //blp/tasvc."""
+
+    date: Any  # datetime or string
+    values: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class StudyResult:
+    """Represents technical analysis results from //blp/tasvc."""
+
+    security: str
+    study: str
+    data: List[StudyDataPoint] = field(default_factory=list)
+    errors: List[str] = field(default_factory=list)
+
+
+@dataclass
 class IntradayBarData:
     """Represents intraday bar data for a single security."""
 
@@ -412,5 +430,40 @@ def parse_beqs_response(msg: blpapi.Message, screen_name: str) -> ScreenResult:
                 record["_fieldExceptions"] = sec["fieldExceptions"]
 
             result.field_data.append(record)
+
+    return result
+
+
+def parse_study_response(msg: blpapi.Message) -> List[StudyDataPoint]:
+    """Parse a studyResponse from //blp/tasvc into StudyDataPoint objects.
+
+    The tasvc response structure:
+        studyData[] = {
+            date = 2024-01-02
+            RSI = 55.3
+        }
+
+    Args:
+        msg: Bloomberg API message containing study response
+
+    Returns:
+        List of StudyDataPoint objects with date and computed values
+    """
+    result = []
+
+    # Use toPy() — the study response is straightforward
+    msg_dict = msg.toPy()
+
+    if "responseError" in msg_dict:
+        return result
+
+    # studyData is the array of data points
+    study_data = msg_dict.get("studyData", [])
+
+    for point in study_data:
+        date_val = point.get("date", None)
+        # All non-date keys are study output values
+        values = {k: v for k, v in point.items() if k != "date"}
+        result.append(StudyDataPoint(date=date_val, values=values))
 
     return result

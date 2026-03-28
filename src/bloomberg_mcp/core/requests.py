@@ -495,6 +495,105 @@ def build_beqs_request(
     return request
 
 
+# ============================================================================
+# Technical Analysis (//blp/tasvc) Request Builder
+# ============================================================================
+
+# Study name mapping: user-friendly name -> Bloomberg studyAttributes choice name
+STUDY_ATTRIBUTES_MAP = {
+    "rsi": "rsiStudyAttributes",
+    "macd": "macdStudyAttributes",
+    "sma": "smaStudyAttributes",
+    "ema": "emaStudyAttributes",
+    "bollinger": "bollingerStudyAttributes",
+    "dmi": "dmiStudyAttributes",
+    "stochastic": "stocStudyAttributes",
+}
+
+# Default periods for each study type
+STUDY_DEFAULT_PERIODS = {
+    "rsi": 14,
+    "macd": None,  # MACD uses fastPeriod/slowPeriod/signalPeriod, not a single period
+    "sma": 20,
+    "ema": 20,
+    "bollinger": 20,
+    "dmi": 14,
+    "stochastic": 14,
+}
+
+
+def build_study_request(
+    service: blpapi.Service,
+    security: str,
+    study: str,
+    start_date: str,
+    end_date: str,
+    period: Optional[int] = None,
+) -> blpapi.Request:
+    """Build a studyRequest for Bloomberg Technical Analysis service.
+
+    CRITICAL: //blp/tasvc uses CHOICE-based element selection for study
+    attributes. This CANNOT use fromPy() — must use element-level API
+    with setChoice().
+
+    Args:
+        service: The opened //blp/tasvc service
+        security: Single security identifier (e.g., "AAPL US Equity")
+        study: Study type: rsi, macd, sma, ema, bollinger, dmi, stochastic
+        start_date: Start date in YYYYMMDD format
+        end_date: End date in YYYYMMDD format
+        period: Study period (e.g., 14 for RSI-14). Uses default if None.
+
+    Returns:
+        A configured blpapi.Request object ready to send
+
+    Example:
+        >>> service = session.getService("//blp/tasvc")
+        >>> request = build_study_request(
+        ...     service, "AAPL US Equity", "rsi",
+        ...     "20240101", "20240630", period=14
+        ... )
+    """
+    study_lower = study.lower()
+    if study_lower not in STUDY_ATTRIBUTES_MAP:
+        raise ValueError(
+            f"Unknown study '{study}'. Valid: {list(STUDY_ATTRIBUTES_MAP.keys())}"
+        )
+
+    request = service.createRequest("studyRequest")
+
+    # --- Price Source ---
+    price_source = request.getElement("priceSource")
+    price_source.getElement("securityName").setValue(security)
+
+    # Set data range using CHOICE element → select "historical"
+    data_range = price_source.getElement("dataRange")
+    data_range.setChoice("historical")
+    historical = data_range.getElement("historical")
+    historical.getElement("startDate").setValue(start_date)
+    historical.getElement("endDate").setValue(end_date)
+
+    # --- Study Attributes (CHOICE element) ---
+    study_attr_name = STUDY_ATTRIBUTES_MAP[study_lower]
+    study_attributes = request.getElement("studyAttributes")
+    study_attributes.setChoice(study_attr_name)
+    study_elem = study_attributes.getElement(study_attr_name)
+
+    # Set period / study-specific parameters
+    if study_lower == "macd":
+        # MACD always uses fast/slow/signal periods (not a single period)
+        fast = period if period is not None else 12
+        study_elem.getElement("fastPeriod").setValue(fast)
+        study_elem.getElement("slowPeriod").setValue(26)
+        study_elem.getElement("signalPeriod").setValue(9)
+    else:
+        effective_period = period if period is not None else STUDY_DEFAULT_PERIODS.get(study_lower)
+        if effective_period is not None:
+            study_elem.getElement("period").setValue(effective_period)
+
+    return request
+
+
 __all__ = [
     "build_reference_data_request",
     "build_historical_data_request",
@@ -504,4 +603,7 @@ __all__ = [
     "build_field_search_request",
     "build_field_info_request",
     "build_beqs_request",
+    "build_study_request",
+    "STUDY_ATTRIBUTES_MAP",
+    "STUDY_DEFAULT_PERIODS",
 ]

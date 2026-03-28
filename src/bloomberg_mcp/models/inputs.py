@@ -423,6 +423,99 @@ TIP: For small universes (<50), prefer ranking over strict filtering.
     )
 
 
+class EstimatesDetailInput(BaseModel):
+    """Input for fetching multi-period consensus estimates."""
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    securities: List[str] = Field(
+        ...,
+        description="List of security identifiers (e.g., ['AAPL US Equity'])",
+        min_length=1,
+        max_length=20
+    )
+    metrics: List[str] = Field(
+        default=["EPS", "SALES", "EBITDA"],
+        description="""Estimate metrics to fetch. Each generates BEST_{metric} fields.
+Options: EPS, SALES, EBITDA, NET_INCOME, OPER_INC, FCF"""
+    )
+    periods: List[str] = Field(
+        default=["1FY", "2FY", "1FQ", "2FQ"],
+        description="""Fiscal periods to fetch. Uses BEST_FPERIOD_OVERRIDE.
+- 1FY/2FY/3FY: Current/next/next+1 fiscal year
+- 1FQ/2FQ/3FQ/4FQ: Current through 4th-next fiscal quarter"""
+    )
+    include_revisions: bool = Field(
+        default=True,
+        description="Include 4-week revision momentum (BEST_{metric}_4WK_CHG)"
+    )
+    include_surprise: bool = Field(
+        default=True,
+        description="Include last earnings surprise (BEST_{metric}_SURPRISE)"
+    )
+    response_format: ResponseFormat = Field(
+        default=ResponseFormat.JSON,
+        description="Output format: 'json' or 'markdown'"
+    )
+
+
+class TechnicalAnalysisInput(BaseModel):
+    """Input for Bloomberg Technical Analysis (//blp/tasvc)."""
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    security: str = Field(
+        ...,
+        description="Single security identifier (e.g., 'AAPL US Equity')",
+        min_length=1
+    )
+    study: str = Field(
+        ...,
+        description="""Technical study to compute. Options:
+- rsi: Relative Strength Index
+- macd: Moving Average Convergence Divergence
+- sma: Simple Moving Average
+- ema: Exponential Moving Average
+- bollinger: Bollinger Bands
+- dmi: Directional Movement Index / ADX
+- stochastic: Stochastic Oscillator"""
+    )
+    start_date: str = Field(
+        ...,
+        description="Start date: YYYYMMDD or YYYY-MM-DD"
+    )
+    end_date: str = Field(
+        ...,
+        description="End date: YYYYMMDD or YYYY-MM-DD"
+    )
+    period: Optional[int] = Field(
+        default=None,
+        description="Study period (e.g., 14 for RSI-14, 20 for SMA-20). Uses study default if omitted."
+    )
+    response_format: ResponseFormat = Field(
+        default=ResponseFormat.JSON,
+        description="Output format: 'json' or 'markdown'"
+    )
+
+    @field_validator("start_date", "end_date")
+    @classmethod
+    def validate_date(cls, v: str) -> str:
+        if len(v) == 8 and v.isdigit():
+            return v
+        if len(v) == 10 and v[4] in '-/':
+            normalized = v.replace('-', '').replace('/', '')
+            if len(normalized) == 8 and normalized.isdigit():
+                return normalized
+        raise ValueError(f"Date must be YYYYMMDD or YYYY-MM-DD format, got: {v}")
+
+    @field_validator("study")
+    @classmethod
+    def validate_study(cls, v: str) -> str:
+        valid = ["rsi", "macd", "sma", "ema", "bollinger", "dmi", "stochastic"]
+        v_lower = v.lower()
+        if v_lower not in valid:
+            raise ValueError(f"study must be one of {valid}, got: {v}")
+        return v_lower
+
+
 class BulkDataInput(BaseModel):
     """Input for fetching Bloomberg bulk data (BDS).
 
