@@ -560,6 +560,80 @@ class BulkDataInput(BaseModel):
     )
 
 
+class OwnershipInput(BaseModel):
+    """Input for fetching ownership summary + holder list."""
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    security: str = Field(
+        ...,
+        description="Single security identifier (e.g., 'AAPL US Equity')",
+        min_length=1
+    )
+    max_holders: int = Field(
+        default=20,
+        description="Maximum number of holders to return",
+        ge=1,
+        le=100
+    )
+    response_format: ResponseFormat = Field(
+        default=ResponseFormat.JSON,
+        description="Output format: 'json' or 'markdown'"
+    )
+
+
+class SupplyChainInput(BaseModel):
+    """Input for fetching supply chain data (suppliers, customers, competitors)."""
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    security: str = Field(
+        ...,
+        description="Single security identifier (e.g., 'AAPL US Equity')",
+        min_length=1
+    )
+    relationship: str = Field(
+        default="all",
+        description="Relationship type: 'suppliers', 'customers', 'competitors', or 'all'"
+    )
+    max_rows: int = Field(
+        default=50,
+        description="Maximum rows per relationship type",
+        ge=1,
+        le=200
+    )
+    response_format: ResponseFormat = Field(
+        default=ResponseFormat.JSON,
+        description="Output format: 'json' or 'markdown'"
+    )
+
+    @field_validator("relationship")
+    @classmethod
+    def validate_relationship(cls, v: str) -> str:
+        valid = ["suppliers", "customers", "competitors", "all"]
+        v_lower = v.lower()
+        if v_lower not in valid:
+            raise ValueError(f"relationship must be one of {valid}, got: {v}")
+        return v_lower
+
+
+class BQLInput(BaseModel):
+    """Input for running a Bloomberg Query Language (BQL) expression."""
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    expression: str = Field(
+        ...,
+        description="""BQL expression to execute. Examples:
+- get(px_last()) for(['AAPL US Equity'])
+- get(px_last(), pe_ratio()) for(['AAPL US Equity','MSFT US Equity'])
+- get(avg(px_last(dates=range(-30d,0d)))) for(['SPY US Equity'])
+- get(px_last()) for(members('SPX Index')) with(limit=10)""",
+        min_length=1
+    )
+    response_format: ResponseFormat = Field(
+        default=ResponseFormat.JSON,
+        description="Output format: 'json' or 'markdown'"
+    )
+
+
 class EconomicCalendarToolInput(BaseModel):
     """Input for economic calendar query."""
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")

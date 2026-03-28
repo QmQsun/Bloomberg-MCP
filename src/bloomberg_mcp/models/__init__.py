@@ -16,6 +16,9 @@ from .inputs import (
     EstimatesDetailInput,
     TechnicalAnalysisInput,
     BulkDataInput,
+    OwnershipInput,
+    SupplyChainInput,
+    BQLInput,
     EconomicCalendarToolInput,
     EarningsCalendarToolInput,
 )
@@ -38,6 +41,9 @@ __all__ = [
     "EstimatesDetailInput",
     "TechnicalAnalysisInput",
     "BulkDataInput",
+    "OwnershipInput",
+    "SupplyChainInput",
+    "BQLInput",
     "EconomicCalendarToolInput",
     "EarningsCalendarToolInput",
 ]
