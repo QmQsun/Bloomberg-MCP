@@ -25,9 +25,8 @@ classifiers = [
     "Typing :: Typed",
 ]
 
-# blpapi must be installed separately:
-# 1. Set BLPAPI_ROOT to C++ SDK path
-# 2. pip install -e ../blpapi-3.25.7.1
+# blpapi must be installed separately: pip install blpapi
+# (pre-built wheels since 3.19.0, no C++ SDK needed)
 dependencies = [
     "mcp>=1.8.0",
     "pydantic>=2.0.0",
@@ -41,6 +40,7 @@ bloomberg-mcp = "bloomberg_mcp.server:main"
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0",
+    "pytest-mock>=3.10",
     "pytest-cov>=4.0",
     "black>=23.0",
     "ruff>=0.1.0",

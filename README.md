@@ -429,21 +429,21 @@ graph TB
 
 - Python 3.10+
 - **Bloomberg Terminal running and logged in** — connects via localhost:8194
-- Bloomberg C++ SDK (`blpapi_cpp`)
-- Bloomberg Python SDK (`blpapi`)
 
 ### Setup
 
 ```bash
-# 1. Set Bloomberg C++ SDK path
-export BLPAPI_ROOT=/path/to/blpapi_cpp_3.x.x.x
-
-# 2. Install blpapi Python SDK
-pip install blpapi
-
-# 3. Install bloomberg-mcp
+# 1. Install bloomberg-mcp (includes all dependencies except blpapi)
+git clone https://github.com/QmQsun/Bloomberg-MCP.git
+cd Bloomberg-MCP
 pip install -e .
+
+# 2. Install Bloomberg Python SDK (pre-built wheels, no C++ SDK needed)
+pip install blpapi
 ```
+
+> **Note**: `blpapi` 3.19.0+ ships pre-built wheels for Windows, macOS, and Linux.
+> No C++ SDK or `BLPAPI_ROOT` setup required. Just `pip install blpapi`.
 
 ### Configure Claude Code
 
