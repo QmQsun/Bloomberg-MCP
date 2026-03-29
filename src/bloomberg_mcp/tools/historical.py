@@ -1,13 +1,20 @@
 """Historical data tools for Bloomberg API.
 
 Provides functions to retrieve historical time series data.
+Requests with >BATCH_SIZE securities are automatically split into
+sequential batches and merged transparently.
 """
 
+import logging
 from typing import List
 
 from ..core.session import BloombergSession
 from ..core.requests import build_historical_data_request
 from ..core.responses import HistoricalData, parse_historical_data_response
+
+logger = logging.getLogger(__name__)
+
+BATCH_SIZE = 500
 
 
 def get_historical_data(
@@ -29,30 +36,48 @@ def get_historical_data(
     Returns:
         List of HistoricalData objects containing time series for each security
 
-    Example:
-        >>> data = get_historical_data(
-        ...     securities=["IBM US Equity"],
-        ...     fields=["PX_LAST", "VOLUME"],
-        ...     start_date="20240101",
-        ...     end_date="20241231",
-        ...     periodicity="DAILY",
-        ... )
-        >>> for security in data:
-        ...     for point in security.data:
-        ...         print(f"{point['date']}: {point}")
+    Note:
+        Requests with more than 500 securities are automatically batched.
     """
-    # Get the Bloomberg session instance
     session = BloombergSession.get_instance()
-
-    # Auto-connect if not connected
     if not session.is_connected():
         if not session.connect():
             raise RuntimeError("Failed to connect to Bloomberg")
 
-    # Get the reference data service
     service = session.get_service("//blp/refdata")
 
-    # Build the historical data request
+    if len(securities) <= BATCH_SIZE:
+        return _send_bdh_batch(
+            session, service, securities, fields, start_date, end_date, periodicity
+        )
+
+    # Auto-batch
+    all_results = []
+    total_batches = (len(securities) + BATCH_SIZE - 1) // BATCH_SIZE
+
+    for i in range(0, len(securities), BATCH_SIZE):
+        batch = securities[i:i + BATCH_SIZE]
+        batch_num = i // BATCH_SIZE + 1
+        logger.info("BDH batch %d/%d: %d tickers", batch_num, total_batches, len(batch))
+
+        results = _send_bdh_batch(
+            session, service, batch, fields, start_date, end_date, periodicity
+        )
+        all_results.extend(results)
+
+    return all_results
+
+
+def _send_bdh_batch(
+    session: BloombergSession,
+    service,
+    securities: List[str],
+    fields: List[str],
+    start_date: str,
+    end_date: str,
+    periodicity: str,
+) -> List[HistoricalData]:
+    """Send a single BDH request batch."""
     request = build_historical_data_request(
         service=service,
         securities=securities,
@@ -61,12 +86,8 @@ def get_historical_data(
         end_date=end_date,
         periodicity=periodicity,
     )
-
-    # Send the request and get response (with parser)
-    results = session.send_request(
+    return session.send_request(
         request,
         service_name="//blp/refdata",
-        parse_func=parse_historical_data_response
+        parse_func=parse_historical_data_response,
     )
-
-    return results

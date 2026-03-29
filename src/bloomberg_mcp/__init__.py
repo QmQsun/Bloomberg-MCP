@@ -58,6 +58,7 @@ from .core import (
     IntradayBar,
     IntradayBarData,
     ScreenResult,
+    BloombergCapacityError,
 )
 
 from .tools import (

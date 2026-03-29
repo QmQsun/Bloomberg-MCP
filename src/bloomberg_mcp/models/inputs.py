@@ -13,9 +13,9 @@ class ReferenceDataInput(BaseModel):
 
     securities: List[str] = Field(
         ...,
-        description="List of security identifiers (e.g., ['AAPL US Equity', 'MSFT US Equity'])",
+        description="List of security identifiers (e.g., ['AAPL US Equity', 'MSFT US Equity']). Large lists are auto-batched.",
         min_length=1,
-        max_length=100
+        max_length=5000
     )
     fields: List[str] = Field(
         ...,
@@ -35,7 +35,7 @@ FieldSet shortcuts (expand to multiple fields):
 
 Example: ['VALUATION', 'PX_LAST'] expands to PE_RATIO, PX_TO_BOOK_RATIO, etc.""",
         min_length=1,
-        max_length=50
+        max_length=400
     )
     overrides: Optional[Dict[str, Any]] = Field(
         default=None,
@@ -53,15 +53,15 @@ class HistoricalDataInput(BaseModel):
 
     securities: List[str] = Field(
         ...,
-        description="List of security identifiers",
+        description="List of security identifiers. Large lists are auto-batched.",
         min_length=1,
-        max_length=50
+        max_length=5000
     )
     fields: List[str] = Field(
         ...,
         description="List of Bloomberg fields or FieldSet shortcuts (same as reference data)",
         min_length=1,
-        max_length=25
+        max_length=25  # Bloomberg API hard limit
     )
     start_date: str = Field(
         ...,

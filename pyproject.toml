@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bloomberg-mcp"
-version = "1.1.0"
+version = "1.2.0"
 description = "Data access layer for Bloomberg Terminal via blpapi"
 readme = "README.md"
 requires-python = ">=3.10"

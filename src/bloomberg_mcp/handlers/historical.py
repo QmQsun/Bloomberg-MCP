@@ -6,8 +6,8 @@ from bloomberg_mcp.server import mcp
 
 logger = logging.getLogger(__name__)
 from bloomberg_mcp.models import HistoricalDataInput
-from bloomberg_mcp.utils import _expand_fields, _truncate_response
-from bloomberg_mcp.formatters import _format_historical_data
+from bloomberg_mcp.utils import _expand_fields
+from bloomberg_mcp.formatters import _format_historical_data, _smart_truncate_historical_data
 
 
 @mcp.tool(
@@ -52,7 +52,7 @@ async def bloomberg_get_historical_data(params: HistoricalDataInput) -> str:
         )
 
         result = _format_historical_data(data, params.response_format)
-        return _truncate_response(result)
+        return _smart_truncate_historical_data(data, result)
 
     except Exception as e:
         return f"Error fetching historical data: {str(e)}"

@@ -11,6 +11,8 @@ For most use cases, import from bloomberg_mcp.tools instead.
 from .session import BloombergSession
 from .cache import BloombergCache, CacheTTL
 from .responses import (
+    # Exceptions
+    BloombergCapacityError,
     # Data types
     SecurityData,
     HistoricalData,
@@ -38,6 +40,8 @@ __all__ = [
     # Cache
     "BloombergCache",
     "CacheTTL",
+    # Exceptions
+    "BloombergCapacityError",
     # Data types
     "SecurityData",
     "HistoricalData",

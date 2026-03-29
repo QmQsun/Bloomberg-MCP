@@ -10,6 +10,28 @@ import blpapi
 logger = logging.getLogger(__name__)
 
 
+class BloombergCapacityError(Exception):
+    """Raised when Bloomberg daily request capacity is exhausted (code -4001).
+
+    Requests will resume after the daily reset (typically midnight ET).
+    """
+    pass
+
+
+def _check_capacity_error(msg: blpapi.Message) -> None:
+    """Detect DAILY_CAPACITY_REACHED and raise BloombergCapacityError."""
+    if not msg.hasElement(blpapi.Name("responseError")):
+        return
+    error_dict = msg.getElement(blpapi.Name("responseError")).toPy()
+    if (error_dict.get("code") == -4001
+            or "DAILY_CAPACITY_REACHED" in str(error_dict.get("subcategory", ""))
+            or "DAILY_CAPACITY_REACHED" in str(error_dict.get("message", ""))):
+        raise BloombergCapacityError(
+            "Bloomberg daily request capacity reached. "
+            "Requests will resume after the daily reset (typically midnight ET)."
+        )
+
+
 @dataclass
 class SecurityData:
     """Represents reference data for a single security."""
@@ -128,6 +150,7 @@ def parse_reference_data_response(msg: blpapi.Message) -> List[SecurityData]:
     Returns:
         List of SecurityData objects, one per security
     """
+    _check_capacity_error(msg)
     result = []
 
     if msg.hasElement(RESPONSE_ERROR):
@@ -187,6 +210,7 @@ def parse_historical_data_response(msg: blpapi.Message) -> List[HistoricalData]:
     Returns:
         List of HistoricalData objects, one per security
     """
+    _check_capacity_error(msg)
     result = []
 
     if msg.hasElement(RESPONSE_ERROR):
