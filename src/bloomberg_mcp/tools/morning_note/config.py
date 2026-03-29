@@ -4,7 +4,7 @@ Security universes, field mappings, and constants for morning note generation.
 All securities and fields validated against Bloomberg API on 2025-12-17.
 """
 
-from typing import Dict, List, NamedTuple
+from typing import Dict, List, NamedTuple, Optional
 
 
 # =============================================================================
@@ -366,7 +366,7 @@ def get_all_jp_watchlist_tickers() -> List[str]:
     return tickers
 
 
-def get_adr_by_ticker(ticker: str) -> ADRDef | None:
+def get_adr_by_ticker(ticker: str) -> Optional[ADRDef]:
     """Look up ADR definition by ticker."""
     for sector_adrs in JAPAN_ADRS.values():
         for adr in sector_adrs:

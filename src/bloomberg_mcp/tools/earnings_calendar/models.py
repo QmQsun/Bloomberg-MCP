@@ -7,7 +7,7 @@ earnings calendar queries in the morning note context.
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from enum import Enum
-from typing import List, Optional, Dict, Any, Union
+from typing import Dict, Any, List, Optional, Tuple, Union
 from pydantic import BaseModel, Field
 
 
@@ -317,7 +317,7 @@ Universe to query. Either:
     )
 
 
-def resolve_universe(universe: Union[str, List[str]]) -> tuple[str, List[str]]:
+def resolve_universe(universe: Union[str, List[str]]) -> Tuple[str, List[str]]:
     """
     Resolve universe input to name and list of securities.
 

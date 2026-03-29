@@ -61,7 +61,15 @@ def main():
         if transport == "sse":
             base_app = mcp.sse_app()
         else:
-            base_app = mcp.streamable_http_app()
+            # streamable_http_app() requires mcp >= 1.18; fall back to sse_app()
+            try:
+                base_app = mcp.streamable_http_app()
+            except AttributeError:
+                logger.warning(
+                    "streamable_http_app() not available (mcp < 1.18), "
+                    "falling back to sse_app()"
+                )
+                base_app = mcp.sse_app()
 
         # Wrap app to allow all hosts (needed for Tailscale/remote access)
         class AllowAllHostsMiddleware:
