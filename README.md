@@ -439,7 +439,8 @@ pip install blpapi
 # 2. Install bloomberg-mcp
 git clone https://github.com/QmQsun/Bloomberg-MCP.git
 cd Bloomberg-MCP
-pip install -e .
+pip install .            # standard install
+# or: pip install -e .   # editable mode (for development)
 ```
 
 > **Note**: `blpapi` 3.19.0+ ships pre-built wheels — `pip install blpapi` works directly
