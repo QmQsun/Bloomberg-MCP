@@ -670,7 +670,7 @@ def get_event_history(
             if r.get("metadata"):
                 try:
                     r["metadata"] = json.loads(r["metadata"])
-                except:
+                except (json.JSONDecodeError, ValueError):
                     pass
             rows.append(r)
         return rows
@@ -878,7 +878,7 @@ def _get_recent_events(
         if row["metadata"]:
             try:
                 metadata = json.loads(row["metadata"])
-            except:
+            except (json.JSONDecodeError, ValueError):
                 pass
 
         events.append(ExtremeEvent(
@@ -947,7 +947,7 @@ def _get_yesterday_themes(
     if row["secondary_themes"]:
         try:
             secondary = json.loads(row["secondary_themes"])
-        except:
+        except (json.JSONDecodeError, ValueError):
             pass
 
     return {

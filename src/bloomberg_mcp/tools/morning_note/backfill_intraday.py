@@ -11,12 +11,15 @@ Usage:
     python -m bloomberg_mcp.tools.morning_note.backfill_intraday
 """
 
+import logging
 import sqlite3
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 
 from .historical import get_db_connection, DEFAULT_DB_PATH
+
+logger = logging.getLogger(__name__)
 
 
 def classify_intraday_character(
@@ -88,11 +91,11 @@ def backfill_intraday_fields(
     missing_dates = get_dates_missing_intraday_data(db_path)
 
     if not missing_dates:
-        print("No dates need backfilling")
+        logger.info("No dates need backfilling")
         return 0
 
-    print(f"Found {len(missing_dates)} dates missing intraday data")
-    print(f"Date range: {missing_dates[0]} to {missing_dates[-1]}")
+    logger.info("Found %d dates missing intraday data", len(missing_dates))
+    logger.info("Date range: %s to %s", missing_dates[0], missing_dates[-1])
 
     # Convert to YYYYMMDD format for Bloomberg
     if start_date is None:
@@ -104,9 +107,9 @@ def backfill_intraday_fields(
     securities = ["SPX Index"]
     fields = ["PX_OPEN", "PX_HIGH", "PX_LOW", "PX_LAST", "VOLUME", "VOLUME_AVG_20D"]
 
-    print(f"Fetching historical data from {start_date} to {end_date}...")
-    print(f"Securities: {securities}")
-    print(f"Fields: {fields}")
+    logger.info("Fetching historical data from %s to %s...", start_date, end_date)
+    logger.info("Securities: %s", securities)
+    logger.info("Fields: %s", fields)
 
     # Fetch historical data
     hist_data = get_historical_data(
@@ -137,7 +140,7 @@ def backfill_intraday_fields(
                 "volume_avg": point.get("VOLUME_AVG_20D"),
             }
 
-    print(f"Got data for {len(data_by_date)} dates")
+    logger.info("Got data for %d dates", len(data_by_date))
 
     # Update database
     conn = get_db_connection(db_path)
@@ -186,11 +189,11 @@ def backfill_intraday_fields(
                 rows_updated += 1
 
         conn.commit()
-        print(f"Updated {rows_updated} rows")
+        logger.info("Updated %d rows", rows_updated)
 
     except Exception as e:
         conn.rollback()
-        print(f"Error: {e}")
+        logger.error("Error: %s", e)
         raise
     finally:
         conn.close()
@@ -213,14 +216,14 @@ def verify_backfill(db_path: Optional[Path] = None) -> None:
         """)
         row = cursor.fetchone()
 
-        print("\nBackfill Verification:")
-        print(f"  Total snapshots: {row[0]}")
-        print(f"  With intraday_character: {row[1]} ({row[1]/row[0]*100:.1f}%)")
-        print(f"  With spx_intraday_range_pct: {row[2]} ({row[2]/row[0]*100:.1f}%)")
-        print(f"  With volume_vs_20d_avg: {row[3]} ({row[3]/row[0]*100:.1f}%)")
+        logger.info("Backfill Verification:")
+        logger.info("  Total snapshots: %d", row[0])
+        logger.info("  With intraday_character: %d (%.1f%%)", row[1], row[1]/row[0]*100)
+        logger.info("  With spx_intraday_range_pct: %d (%.1f%%)", row[2], row[2]/row[0]*100)
+        logger.info("  With volume_vs_20d_avg: %d (%.1f%%)", row[3], row[3]/row[0]*100)
 
         # Show sample of recent data
-        print("\nRecent snapshots with intraday data:")
+        logger.info("Recent snapshots with intraday data:")
         cursor = conn.execute("""
             SELECT session_date, spx_change_pct, intraday_character,
                    spx_intraday_range_pct, volume_vs_20d_avg
@@ -233,10 +236,11 @@ def verify_backfill(db_path: Optional[Path] = None) -> None:
             char = row[2] or "N/A"
             range_pct = f"{row[3]:.2f}%" if row[3] else "N/A"
             vol = f"{row[4]:.2f}x" if row[4] else "N/A"
-            print(f"  {row[0]}: SPX {row[1]:+.2f}% | {char:15} | Range: {range_pct:6} | Vol: {vol}")
+            logger.info("  %s: SPX %+.2f%% | %-15s | Range: %-6s | Vol: %s",
+                        row[0], row[1], char, range_pct, vol)
 
         # Show character distribution
-        print("\nIntraday character distribution:")
+        logger.info("Intraday character distribution:")
         cursor = conn.execute("""
             SELECT intraday_character, COUNT(*) as count
             FROM session_snapshots
@@ -245,7 +249,7 @@ def verify_backfill(db_path: Optional[Path] = None) -> None:
             ORDER BY count DESC
         """)
         for row in cursor.fetchall():
-            print(f"  {row[0]}: {row[1]}")
+            logger.info("  %s: %d", row[0], row[1])
 
     finally:
         conn.close()
@@ -267,5 +271,5 @@ if __name__ == "__main__":
         verify_backfill(db_path)
     else:
         rows = backfill_intraday_fields(args.start, args.end, db_path)
-        print(f"\nBackfill complete: {rows} rows updated")
+        logger.info("Backfill complete: %d rows updated", rows)
         verify_backfill(db_path)

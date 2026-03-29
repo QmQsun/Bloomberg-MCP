@@ -1,6 +1,10 @@
 """Reference data (BDP) tool handler."""
 
+import logging
+
 from bloomberg_mcp.server import mcp
+
+logger = logging.getLogger(__name__)
 from bloomberg_mcp.models import ReferenceDataInput
 from bloomberg_mcp.utils import _expand_fields, _truncate_response
 from bloomberg_mcp.formatters import _format_security_data

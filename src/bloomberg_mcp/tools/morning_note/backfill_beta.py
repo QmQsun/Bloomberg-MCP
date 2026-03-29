@@ -11,6 +11,7 @@ Usage:
     python -m bloomberg_mcp.tools.morning_note.backfill_beta
 """
 
+import logging
 import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -18,6 +19,8 @@ from typing import Dict, List, Any, Optional
 
 from .historical import get_db_connection, DEFAULT_DB_PATH
 from .config import MACRO_COMMODITIES, MACRO_VOLATILITY, MACRO_RATES
+
+logger = logging.getLogger(__name__)
 
 
 def get_dates_missing_beta_data(db_path: Optional[Path] = None) -> List[str]:
@@ -58,11 +61,11 @@ def backfill_beta_fields(
     missing_dates = get_dates_missing_beta_data(db_path)
 
     if not missing_dates:
-        print("No dates need backfilling")
+        logger.info("No dates need backfilling")
         return 0
 
-    print(f"Found {len(missing_dates)} dates missing beta data")
-    print(f"Date range: {missing_dates[0]} to {missing_dates[-1]}")
+    logger.info("Found %d dates missing beta data", len(missing_dates))
+    logger.info("Date range: %s to %s", missing_dates[0], missing_dates[-1])
 
     # Convert to YYYYMMDD format for Bloomberg
     if start_date is None:
@@ -79,8 +82,8 @@ def backfill_beta_fields(
 
     fields = ["PX_LAST", "CHG_PCT_1D"]
 
-    print(f"Fetching historical data from {start_date} to {end_date}...")
-    print(f"Securities: {securities}")
+    logger.info("Fetching historical data from %s to %s...", start_date, end_date)
+    logger.info("Securities: %s", securities)
 
     # Fetch historical data
     hist_data = get_historical_data(
@@ -111,7 +114,7 @@ def backfill_beta_fields(
                 "change_pct": point.get("CHG_PCT_1D"),
             }
 
-    print(f"Got data for {len(data_by_date)} dates")
+    logger.info("Got data for %d dates", len(data_by_date))
 
     # Update database
     conn = get_db_connection(db_path)
@@ -154,11 +157,11 @@ def backfill_beta_fields(
                 rows_updated += 1
 
         conn.commit()
-        print(f"Updated {rows_updated} rows")
+        logger.info("Updated %d rows", rows_updated)
 
     except Exception as e:
         conn.rollback()
-        print(f"Error: {e}")
+        logger.error("Error: %s", e)
         raise
     finally:
         conn.close()
@@ -181,14 +184,14 @@ def verify_backfill(db_path: Optional[Path] = None) -> None:
         """)
         row = cursor.fetchone()
 
-        print("\nBackfill Verification:")
-        print(f"  Total snapshots: {row[0]}")
-        print(f"  With VIX: {row[1]} ({row[1]/row[0]*100:.1f}%)")
-        print(f"  With Gold: {row[2]} ({row[2]/row[0]*100:.1f}%)")
-        print(f"  With 2Y: {row[3]} ({row[3]/row[0]*100:.1f}%)")
+        logger.info("Backfill Verification:")
+        logger.info("  Total snapshots: %d", row[0])
+        logger.info("  With VIX: %d (%.1f%%)", row[1], row[1]/row[0]*100)
+        logger.info("  With Gold: %d (%.1f%%)", row[2], row[2]/row[0]*100)
+        logger.info("  With 2Y: %d (%.1f%%)", row[3], row[3]/row[0]*100)
 
         # Show sample of recent data
-        print("\nRecent snapshots with beta data:")
+        logger.info("Recent snapshots with beta data:")
         cursor = conn.execute("""
             SELECT session_date, spx_change_pct, vix_close, gold_close, us_2y_yield
             FROM session_snapshots
@@ -197,7 +200,8 @@ def verify_backfill(db_path: Optional[Path] = None) -> None:
             LIMIT 5
         """)
         for row in cursor.fetchall():
-            print(f"  {row[0]}: SPX {row[1]:+.2f}% | VIX: {row[2]:.1f} | Gold: ${row[3]:.0f} | 2Y: {row[4]:.2f}%")
+            logger.info("  %s: SPX %+.2f%% | VIX: %.1f | Gold: $%.0f | 2Y: %.2f%%",
+                        row[0], row[1], row[2], row[3], row[4])
 
     finally:
         conn.close()
@@ -219,5 +223,5 @@ if __name__ == "__main__":
         verify_backfill(db_path)
     else:
         rows = backfill_beta_fields(args.start, args.end, db_path)
-        print(f"\nBackfill complete: {rows} rows updated")
+        logger.info("Backfill complete: %d rows updated", rows)
         verify_backfill(db_path)

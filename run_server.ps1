@@ -24,13 +24,13 @@ $env:BLOOMBERG_HOST = "localhost"
 $env:BLOOMBERG_PORT = "8194"
 
 # Build arguments
-$args = @()
+$serverArgs = @()
 if ($http) {
-    $args += "--http"
-    $args += "--port=$port"
+    $serverArgs += "--http"
+    $serverArgs += "--port=$port"
 } elseif ($sse) {
-    $args += "--sse"
-    $args += "--port=$port"
+    $serverArgs += "--sse"
+    $serverArgs += "--port=$port"
 }
 
 # Run the MCP server
@@ -38,9 +38,9 @@ Write-Host "Starting Bloomberg MCP Server..."
 Write-Host "Bloomberg Host: $env:BLOOMBERG_HOST"
 Write-Host "Bloomberg Port: $env:BLOOMBERG_PORT"
 
-if ($args.Count -gt 0) {
+if ($serverArgs.Count -gt 0) {
     Write-Host "Transport: HTTP/SSE on port $port"
-    python -m bloomberg_mcp.server @args
+    python -m bloomberg_mcp.server @serverArgs
 } else {
     Write-Host "Transport: stdio"
     python -m bloomberg_mcp.server

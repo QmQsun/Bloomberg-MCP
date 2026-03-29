@@ -1,9 +1,12 @@
 """Intraday bars and ticks tool handlers."""
 
 import json
+import logging
 from datetime import datetime
 
 from bloomberg_mcp.server import mcp
+
+logger = logging.getLogger(__name__)
 from bloomberg_mcp.models import IntradayBarsInput, IntradayTicksInput, ResponseFormat
 from bloomberg_mcp.utils import _truncate_response
 

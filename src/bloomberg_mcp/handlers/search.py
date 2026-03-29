@@ -1,8 +1,11 @@
 """Security search, field search, and field info tool handlers."""
 
 import json
+import logging
 
 from bloomberg_mcp.server import mcp
+
+logger = logging.getLogger(__name__)
 from bloomberg_mcp.models import SearchSecuritiesInput, SearchFieldsInput, FieldInfoInput, ResponseFormat
 from bloomberg_mcp.utils import _truncate_response
 

@@ -8,9 +8,9 @@ A Model Context Protocol server that gives AI assistants direct access to Bloomb
 
 ---
 
-Bloomberg MCP bridges the Bloomberg Terminal with AI assistants via the [Model Context Protocol](https://modelcontextprotocol.io). It exposes **22 tools** covering reference data, bulk data, historical analysis, technical analysis, estimates, ownership, supply chain, screening, BQL queries, and calendars — all accessible through natural language.
+Bloomberg MCP bridges the Bloomberg Terminal with AI assistants via the [Model Context Protocol](https://modelcontextprotocol.io). It exposes **18 tools** covering reference data, bulk data, historical analysis, technical analysis, estimates, ownership, supply chain, screening, BQL queries, and calendars — all accessible through natural language.
 
-> Enhanced fork of [tallinn102/bloomberg-mcp](https://github.com/tallinn102/bloomberg-mcp) with modular architecture, expanded Bloomberg API coverage, caching layer, and 10 new analytical FieldSets.
+> Enhanced fork of [tallinn102/bloomberg-mcp](https://github.com/tallinn102/bloomberg-mcp) — v1.1 adds 6 new tools, modular architecture, caching layer, and 10 analytical FieldSets.
 
 ```
 You: "What are the top holders and supply chain for CEG US Equity?"
@@ -32,7 +32,7 @@ graph TB
 
     subgraph "Bloomberg MCP Server"
         direction TB
-        MCP["FastMCP Server<br/><i>22 tools exposed</i>"]
+        MCP["FastMCP Server<br/><i>18 tools exposed</i>"]
 
         subgraph Handlers["Handler Layer"]
             direction LR
@@ -68,7 +68,7 @@ graph TB
     style SESSION fill:#2e7d32,stroke:#1b5e20,color:#fff
 ```
 
-## Tools Overview (22 tools)
+## Tools Overview (18 tools)
 
 ```mermaid
 graph LR
@@ -421,7 +421,7 @@ graph TB
     style H_BQL fill:#e65100,stroke:#bf360c,color:#fff
 ```
 
-<small>★ = New in v2</small>
+<small>★ = New in v1.1</small>
 
 ## Installation
 
@@ -565,10 +565,13 @@ black src/ tests/
 ruff check src/ tests/
 ```
 
-## Credits
+## Contributors
 
-- Original project: [tallinn102/bloomberg-mcp](https://github.com/tallinn102/bloomberg-mcp)
-- Enhanced by: [QmQsun](https://github.com/QmQsun) — modular refactor, expanded API coverage, caching, new analytical tools
+| | Contributor | Role |
+|---|---|---|
+| 1 | [QmQsun](https://github.com/QmQsun) | Architecture refactor, 6 new tools, caching layer, FieldSets, code review |
+| 2 | Claude (Anthropic) | Implementation assistance, code generation, QA |
+| 3 | [tallinn102](https://github.com/tallinn102/bloomberg-mcp) | Original project foundation |
 
 ## License
 

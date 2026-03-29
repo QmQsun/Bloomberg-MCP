@@ -1,10 +1,13 @@
 """Response dataclasses for Bloomberg API responses."""
 
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import blpapi
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -129,7 +132,7 @@ def parse_reference_data_response(msg: blpapi.Message) -> List[SecurityData]:
 
     if msg.hasElement(RESPONSE_ERROR):
         error_msg = str(msg.getElement(RESPONSE_ERROR))
-        # Return empty list with error - caller should handle
+        logger.error("Reference data response error: %s", error_msg)
         return result
 
     securities = msg.getElement(SECURITY_DATA)
@@ -187,6 +190,7 @@ def parse_historical_data_response(msg: blpapi.Message) -> List[HistoricalData]:
     result = []
 
     if msg.hasElement(RESPONSE_ERROR):
+        logger.error("Historical data response error: %s", msg.getElement(RESPONSE_ERROR))
         return result
 
     # Historical data response has a single securityData element (not an array)
@@ -248,6 +252,7 @@ def parse_intraday_bar_response(msg: blpapi.Message) -> List[IntradayBar]:
     msg_dict = msg.toPy()
 
     if "responseError" in msg_dict:
+        logger.error("Intraday bar response error: %s", msg_dict["responseError"])
         return result
 
     if BAR_DATA not in msg_dict:
@@ -291,6 +296,7 @@ def parse_intraday_tick_response(msg: blpapi.Message) -> List[Dict[str, Any]]:
     msg_dict = msg.toPy()
 
     if "responseError" in msg_dict:
+        logger.error("Intraday tick response error: %s", msg_dict["responseError"])
         return result
 
     tick_data = msg_dict.get("tickData", {})
@@ -317,6 +323,7 @@ def parse_instrument_search_response(msg: blpapi.Message) -> List[Dict[str, Any]
     msg_dict = msg.toPy()
 
     if "responseError" in msg_dict:
+        logger.error("Instrument search response error: %s", msg_dict["responseError"])
         return result
 
     results = msg_dict.get("results", [])
@@ -368,6 +375,7 @@ def parse_field_info_response(msg: blpapi.Message) -> List[Dict[str, Any]]:
     msg_dict = msg.toPy()
 
     if "responseError" in msg_dict:
+        logger.error("Field info response error: %s", msg_dict["responseError"])
         return result
 
     fields = msg_dict.get("fieldData", [])
@@ -455,6 +463,7 @@ def parse_study_response(msg: blpapi.Message) -> List[StudyDataPoint]:
     msg_dict = msg.toPy()
 
     if "responseError" in msg_dict:
+        logger.error("Study response error: %s", msg_dict["responseError"])
         return result
 
     # studyData is the array of data points

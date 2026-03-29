@@ -14,7 +14,7 @@ from .responses import (
     parse_intraday_bar_response,
     SecurityData,
     HistoricalData,
-    IntradayBarData,
+    IntradayBar,
 )
 
 
@@ -335,7 +335,7 @@ class BloombergSession:
         start_datetime: str,
         end_datetime: str,
         interval: int = 60
-    ) -> Optional[IntradayBarData]:
+    ) -> Optional[IntradayBar]:
         """
         Get intraday bar data for a security.
 
@@ -347,7 +347,7 @@ class BloombergSession:
             interval: Bar interval in minutes (default: 60)
 
         Returns:
-            IntradayBarData object or None if error
+            IntradayBar object or None if error
         """
         service = self.get_service("//blp/refdata")
         if service is None:
