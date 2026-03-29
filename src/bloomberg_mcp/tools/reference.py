@@ -10,7 +10,11 @@ from typing import Any, Dict, List, Optional
 
 from ..core.session import BloombergSession
 from ..core.requests import build_reference_data_request
-from ..core.responses import SecurityData, parse_reference_data_response
+from ..core.responses import (
+    SecurityData,
+    BloombergCapacityError,
+    parse_reference_data_response,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +34,9 @@ def get_reference_data(
         overrides: Optional field overrides as key-value pairs
 
     Returns:
-        List of SecurityData objects containing field values for each security
+        List of SecurityData objects containing field values for each security.
+        If capacity is hit mid-batch, returns partial results with error markers
+        on the remaining securities.
 
     Note:
         Requests with more than 500 securities are automatically batched.
@@ -45,7 +51,7 @@ def get_reference_data(
     if len(securities) <= BATCH_SIZE:
         return _send_bdp_batch(session, service, securities, fields, overrides)
 
-    # Auto-batch
+    # Auto-batch with partial result preservation
     all_results = []
     total_batches = (len(securities) + BATCH_SIZE - 1) // BATCH_SIZE
 
@@ -54,8 +60,24 @@ def get_reference_data(
         batch_num = i // BATCH_SIZE + 1
         logger.info("BDP batch %d/%d: %d tickers", batch_num, total_batches, len(batch))
 
-        results = _send_bdp_batch(session, service, batch, fields, overrides)
-        all_results.extend(results)
+        try:
+            results = _send_bdp_batch(session, service, batch, fields, overrides)
+            all_results.extend(results)
+        except BloombergCapacityError:
+            # Mark all remaining securities (this batch + future batches) as failed
+            remaining = securities[i:]
+            for ticker in remaining:
+                all_results.append(SecurityData(
+                    security=ticker,
+                    errors=["Bloomberg daily capacity reached — data not fetched"],
+                ))
+            logger.warning(
+                "BDP capacity hit at batch %d/%d. "
+                "Returned %d ok + %d unfetched.",
+                batch_num, total_batches,
+                len(all_results) - len(remaining), len(remaining),
+            )
+            break
 
     return all_results
 

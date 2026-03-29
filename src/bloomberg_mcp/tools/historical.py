@@ -10,7 +10,11 @@ from typing import List
 
 from ..core.session import BloombergSession
 from ..core.requests import build_historical_data_request
-from ..core.responses import HistoricalData, parse_historical_data_response
+from ..core.responses import (
+    HistoricalData,
+    BloombergCapacityError,
+    parse_historical_data_response,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +38,9 @@ def get_historical_data(
         periodicity: Data frequency - "DAILY", "WEEKLY", "MONTHLY", "QUARTERLY", "YEARLY"
 
     Returns:
-        List of HistoricalData objects containing time series for each security
+        List of HistoricalData objects containing time series for each security.
+        If capacity is hit mid-batch, returns partial results with error markers
+        on the remaining securities.
 
     Note:
         Requests with more than 500 securities are automatically batched.
@@ -51,7 +57,7 @@ def get_historical_data(
             session, service, securities, fields, start_date, end_date, periodicity
         )
 
-    # Auto-batch
+    # Auto-batch with partial result preservation
     all_results = []
     total_batches = (len(securities) + BATCH_SIZE - 1) // BATCH_SIZE
 
@@ -60,10 +66,25 @@ def get_historical_data(
         batch_num = i // BATCH_SIZE + 1
         logger.info("BDH batch %d/%d: %d tickers", batch_num, total_batches, len(batch))
 
-        results = _send_bdh_batch(
-            session, service, batch, fields, start_date, end_date, periodicity
-        )
-        all_results.extend(results)
+        try:
+            results = _send_bdh_batch(
+                session, service, batch, fields, start_date, end_date, periodicity
+            )
+            all_results.extend(results)
+        except BloombergCapacityError:
+            remaining = securities[i:]
+            for ticker in remaining:
+                all_results.append(HistoricalData(
+                    security=ticker,
+                    errors=["Bloomberg daily capacity reached — data not fetched"],
+                ))
+            logger.warning(
+                "BDH capacity hit at batch %d/%d. "
+                "Returned %d ok + %d unfetched.",
+                batch_num, total_batches,
+                len(all_results) - len(remaining), len(remaining),
+            )
+            break
 
     return all_results
 
