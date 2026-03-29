@@ -433,17 +433,25 @@ graph TB
 ### Setup
 
 ```bash
-# 1. Install bloomberg-mcp (includes all dependencies except blpapi)
+# 1. Install Bloomberg Python SDK
+pip install blpapi
+
+# 2. Install bloomberg-mcp
 git clone https://github.com/QmQsun/Bloomberg-MCP.git
 cd Bloomberg-MCP
 pip install -e .
-
-# 2. Install Bloomberg Python SDK (pre-built wheels, no C++ SDK needed)
-pip install blpapi
 ```
 
-> **Note**: `blpapi` 3.19.0+ ships pre-built wheels for Windows, macOS, and Linux.
-> No C++ SDK or `BLPAPI_ROOT` setup required. Just `pip install blpapi`.
+> **Note**: `blpapi` 3.19.0+ ships pre-built wheels — `pip install blpapi` works directly
+> on Windows, macOS, and Linux without additional setup.
+>
+> If `pip install blpapi` fails (older platforms or Python versions), install via the C++ SDK:
+> ```bash
+> # Set Bloomberg C++ SDK path
+> export BLPAPI_ROOT=/path/to/blpapi_cpp_3.x.x.x   # Linux/macOS
+> set BLPAPI_ROOT=C:\blp\blpapi_cpp_3.x.x.x         # Windows
+> pip install blpapi
+> ```
 
 ### Configure Claude Code
 

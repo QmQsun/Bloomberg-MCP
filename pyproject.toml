@@ -26,7 +26,8 @@ classifiers = [
 ]
 
 # blpapi must be installed separately: pip install blpapi
-# (pre-built wheels since 3.19.0, no C++ SDK needed)
+# Pre-built wheels available since 3.19.0; for older platforms,
+# set BLPAPI_ROOT to the C++ SDK path before installing.
 dependencies = [
     "mcp>=1.8.0",
     "pydantic>=2.0.0",
