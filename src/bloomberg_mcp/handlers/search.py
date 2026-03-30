@@ -3,7 +3,7 @@
 import json
 import logging
 
-from bloomberg_mcp.server import mcp
+from bloomberg_mcp._mcp_instance import mcp
 
 logger = logging.getLogger(__name__)
 from bloomberg_mcp.models import SearchSecuritiesInput, SearchFieldsInput, FieldInfoInput, ResponseFormat

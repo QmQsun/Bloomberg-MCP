@@ -92,7 +92,7 @@ from .tools.morning_note import (
 # Dynamic screening (lazy import to avoid circular deps)
 # Use: from bloomberg_mcp.tools.dynamic_screening import DynamicScreen, F, FieldSets
 
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 
 __all__ = [
     # Session management

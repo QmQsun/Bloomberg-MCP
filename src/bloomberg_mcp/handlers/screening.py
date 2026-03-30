@@ -3,7 +3,7 @@
 import json
 import logging
 
-from bloomberg_mcp.server import mcp
+from bloomberg_mcp._mcp_instance import mcp
 from bloomberg_mcp.models import RunScreenInput, GetUniverseInput, DynamicScreenInput, ResponseFormat
 from bloomberg_mcp.utils import _expand_fields, _truncate_response, _get_fieldset_map
 from bloomberg_mcp.formatters import _format_screen_result

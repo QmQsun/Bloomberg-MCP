@@ -579,8 +579,9 @@ ruff check src/ tests/
 | | Contributor | Role |
 |---|---|---|
 | 1 | [QmQsun](https://github.com/QmQsun) | Architecture refactor, 6 new tools, caching layer, FieldSets, code review |
-| 2 | Claude (Anthropic) | Implementation assistance, code generation, QA |
-| 3 | [tallinn102](https://github.com/tallinn102/bloomberg-mcp) | Original project foundation |
+| 2 | [srarmy2005](https://github.com/srarmy2005) | Bug discovery (`__main__` double-import fix) |
+| 3 | Claude (Anthropic) | Implementation assistance, code generation, QA |
+| 4 | [tallinn102](https://github.com/tallinn102/bloomberg-mcp) | Original project foundation |
 
 ## License
 

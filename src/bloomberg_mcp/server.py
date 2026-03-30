@@ -20,10 +20,8 @@ import os
 
 logger = logging.getLogger(__name__)
 
-from mcp.server.fastmcp import FastMCP
-
-# Initialize FastMCP server — handlers import this instance to register tools
-mcp = FastMCP("bloomberg_mcp")
+# Import the singleton mcp instance (see _mcp_instance.py for why)
+from bloomberg_mcp._mcp_instance import mcp  # noqa: F401
 
 # Register all tool handlers (each module decorates functions with @mcp.tool)
 import bloomberg_mcp.handlers  # noqa: E402, F401

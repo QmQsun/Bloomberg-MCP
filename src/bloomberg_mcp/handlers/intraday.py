@@ -4,7 +4,7 @@ import json
 import logging
 from datetime import datetime
 
-from bloomberg_mcp.server import mcp
+from bloomberg_mcp._mcp_instance import mcp
 
 logger = logging.getLogger(__name__)
 from bloomberg_mcp.models import IntradayBarsInput, IntradayTicksInput, ResponseFormat

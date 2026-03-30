@@ -3,7 +3,7 @@
 import json
 import logging
 
-from bloomberg_mcp.server import mcp
+from bloomberg_mcp._mcp_instance import mcp
 from bloomberg_mcp.models import EconomicCalendarToolInput, EarningsCalendarToolInput, ResponseFormat
 
 logger = logging.getLogger(__name__)
