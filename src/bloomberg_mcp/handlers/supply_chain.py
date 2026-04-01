@@ -6,6 +6,8 @@ import logging
 from bloomberg_mcp._mcp_instance import mcp
 from bloomberg_mcp.models import SupplyChainInput, ResponseFormat
 from bloomberg_mcp.utils import _truncate_response
+from bloomberg_mcp.core.logging import log_tool_call
+from bloomberg_mcp.handlers._common import pre_request, fallback_or_error
 
 logger = logging.getLogger(__name__)
 
@@ -50,85 +52,89 @@ async def bloomberg_get_supply_chain(params: SupplyChainInput) -> str:
         security="AAPL US Equity", relationship="all"
         security="TSLA US Equity", relationship="suppliers"
     """
-    try:
-        from bloomberg_mcp.tools import get_reference_data
+    with log_tool_call("bloomberg_get_supply_chain",
+                       securities=[params.security]) as ctx:
+        try:
+            pre_request()
 
-        # Determine which relationships to fetch
-        if params.relationship == "all":
-            rel_types = list(SUPPLY_CHAIN_FIELDS.keys())
-        else:
-            rel_types = [params.relationship]
+            from bloomberg_mcp.tools import get_reference_data
 
-        results = {}
-        all_errors = []
+            if params.relationship == "all":
+                rel_types = list(SUPPLY_CHAIN_FIELDS.keys())
+            else:
+                rel_types = [params.relationship]
 
-        for rel_type in rel_types:
-            bds_field = SUPPLY_CHAIN_FIELDS[rel_type]
+            results = {}
+            all_errors = []
 
-            data = get_reference_data(
-                securities=[params.security],
-                fields=[bds_field]
-            )
+            for rel_type in rel_types:
+                bds_field = SUPPLY_CHAIN_FIELDS[rel_type]
 
-            rows = []
-            if data:
-                raw = data[0].fields.get(bds_field, [])
-                if data[0].errors:
-                    all_errors.extend(data[0].errors)
-                if isinstance(raw, list):
-                    rows = raw[:params.max_rows]
+                data = get_reference_data(
+                    securities=[params.security],
+                    fields=[bds_field]
+                )
 
-            results[rel_type] = {
-                "field": bds_field,
-                "count": len(rows),
-                "data": rows,
-            }
+                rows = []
+                if data:
+                    raw = data[0].fields.get(bds_field, [])
+                    if data[0].errors:
+                        all_errors.extend(data[0].errors)
+                    if isinstance(raw, list):
+                        rows = raw[:params.max_rows]
 
-        if params.response_format == ResponseFormat.MARKDOWN:
-            lines = [
-                f"## Supply Chain: {params.security}",
-                ""
-            ]
+                results[rel_type] = {
+                    "field": bds_field,
+                    "count": len(rows),
+                    "data": rows,
+                }
 
-            if all_errors:
-                lines.append(f"**Errors**: {', '.join(all_errors)}")
-                lines.append("")
+            if params.response_format == ResponseFormat.MARKDOWN:
+                lines = [
+                    f"## Supply Chain: {params.security}",
+                    ""
+                ]
 
-            for rel_type, rel_data in results.items():
-                lines.append(f"### {rel_type.title()} ({rel_data['count']})")
-                lines.append("")
-
-                rows = rel_data["data"]
-                if rows:
-                    columns = list(rows[0].keys())
-                    lines.append("| " + " | ".join(columns) + " |")
-                    lines.append("|" + "---|" * len(columns))
-                    for row in rows:
-                        vals = []
-                        for col in columns:
-                            v = row.get(col, "")
-                            if isinstance(v, float):
-                                v = f"{v:.2f}"
-                            val_str = str(v)
-                            if len(val_str) > 35:
-                                val_str = val_str[:32] + "..."
-                            vals.append(val_str)
-                        lines.append("| " + " | ".join(vals) + " |")
-                    lines.append("")
-                else:
-                    lines.append("*No data available*")
+                if all_errors:
+                    lines.append(f"**Errors**: {', '.join(all_errors)}")
                     lines.append("")
 
-            result = "\n".join(lines)
-        else:
-            result = json.dumps({
-                "security": params.security,
-                "relationships": results,
-                "errors": all_errors,
-            }, indent=2, default=str)
+                for rel_type, rel_data in results.items():
+                    lines.append(f"### {rel_type.title()} ({rel_data['count']})")
+                    lines.append("")
 
-        return _truncate_response(result)
+                    rows = rel_data["data"]
+                    if rows:
+                        columns = list(rows[0].keys())
+                        lines.append("| " + " | ".join(columns) + " |")
+                        lines.append("|" + "---|" * len(columns))
+                        for row in rows:
+                            vals = []
+                            for col in columns:
+                                v = row.get(col, "")
+                                if isinstance(v, float):
+                                    v = f"{v:.2f}"
+                                val_str = str(v)
+                                if len(val_str) > 35:
+                                    val_str = val_str[:32] + "..."
+                                vals.append(val_str)
+                            lines.append("| " + " | ".join(vals) + " |")
+                        lines.append("")
+                    else:
+                        lines.append("*No data available*")
+                        lines.append("")
 
-    except Exception as e:
-        logger.exception("Error fetching supply chain data")
-        return f"Error fetching supply chain data: {str(e)}"
+                result = "\n".join(lines)
+            else:
+                result = json.dumps({
+                    "security": params.security,
+                    "relationships": results,
+                    "errors": all_errors,
+                }, indent=2, default=str)
+
+            ctx["result_size"] = len(result)
+            return _truncate_response(result)
+
+        except Exception as e:
+            ctx["error"] = True
+            return fallback_or_error(e, "bloomberg_get_supply_chain")

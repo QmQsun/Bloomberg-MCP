@@ -4,12 +4,26 @@ This module provides low-level Bloomberg API interaction:
 - BloombergSession: Singleton connection manager
 - Response dataclasses: SecurityData, HistoricalData, IntradayBar, etc.
 - Parse functions: Convert blpapi Messages to Python objects
+- CircuitBreaker: Three-state failure protection
+- RequestThrottle: Rate limiting
+- Validators: Response quality gates
+- Logging: Structured JSON logging with metrics
 
 For most use cases, import from bloomberg_mcp.tools instead.
 """
 
 from .session import BloombergSession
 from .cache import BloombergCache, CacheTTL
+from .circuit_breaker import CircuitBreaker, BloombergCircuitOpenError
+from .middleware import RequestThrottle, ThrottleExceededError
+from .validators import (
+    validate_field_count,
+    validate_reference_response,
+    validate_historical_response,
+    validate_bulk_response,
+    ValidationWarning,
+)
+from .logging import setup_logging, log_tool_call, ToolCallMetrics
 from .responses import (
     # Exceptions
     BloombergCapacityError,
@@ -40,6 +54,22 @@ __all__ = [
     # Cache
     "BloombergCache",
     "CacheTTL",
+    # Circuit breaker
+    "CircuitBreaker",
+    "BloombergCircuitOpenError",
+    # Throttle
+    "RequestThrottle",
+    "ThrottleExceededError",
+    # Validators
+    "validate_field_count",
+    "validate_reference_response",
+    "validate_historical_response",
+    "validate_bulk_response",
+    "ValidationWarning",
+    # Logging
+    "setup_logging",
+    "log_tool_call",
+    "ToolCallMetrics",
     # Exceptions
     "BloombergCapacityError",
     # Data types

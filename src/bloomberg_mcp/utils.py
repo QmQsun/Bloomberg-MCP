@@ -5,6 +5,10 @@ from typing import List
 
 # Constants
 CHARACTER_LIMIT = 50000
+
+# Bloomberg field limits per request type
+_FIELD_LIMIT_REFERENCE = 400
+_FIELD_LIMIT_HISTORICAL = 25
 BLOOMBERG_HOST = os.environ.get("BLOOMBERG_HOST", "localhost")
 BLOOMBERG_PORT = int(os.environ.get("BLOOMBERG_PORT", "8194"))
 
@@ -13,9 +17,12 @@ def _get_fieldset_map():
     """Lazy-load fieldset map to avoid circular imports.
 
     Single source of truth for FieldSet name -> FieldSet object mapping.
+    Tries YAML config first (config/fieldsets.yaml), falls back to code-defined FieldSets.
     """
     from bloomberg_mcp.tools.dynamic_screening import FieldSets
-    return {
+
+    # Code-defined FieldSets (always available)
+    code_map = {
         "RVOL": FieldSets.RVOL,
         "MOMENTUM": FieldSets.MOMENTUM,
         "MOMENTUM_EXTENDED": FieldSets.MOMENTUM_EXTENDED,
@@ -48,6 +55,21 @@ def _get_fieldset_map():
         "GROWTH": FieldSets.GROWTH,
     }
 
+    # Try YAML overlay — adds new FieldSets or overrides existing ones
+    try:
+        from bloomberg_mcp.config import load_fieldsets_yaml
+        from bloomberg_mcp.tools.dynamic_screening.models import FieldSet
+
+        yaml_fieldsets = load_fieldsets_yaml()
+        for name, fields in yaml_fieldsets.items():
+            if name not in code_map:
+                # New FieldSet from YAML only
+                code_map[name] = FieldSet(name.lower(), tuple(fields))
+    except Exception:
+        pass  # YAML overlay is best-effort
+
+    return code_map
+
 
 def _expand_fields(fields: List[str]) -> List[str]:
     """Expand FieldSet shortcuts to raw Bloomberg fields.
@@ -76,6 +98,24 @@ def _expand_fields(fields: List[str]) -> List[str]:
                 expanded.append(field_spec)
 
     return expanded
+
+
+def _expand_and_chunk_fields(
+    fields: List[str],
+    max_per_request: int = _FIELD_LIMIT_HISTORICAL,
+) -> List[List[str]]:
+    """Expand FieldSet shortcuts then chunk into legal-sized batches.
+
+    Use this when the expanded field list may exceed Bloomberg's per-request
+    limit (400 for BDP, 25 for BDH).
+
+    Returns:
+        List of field-list batches, each within max_per_request.
+    """
+    expanded = _expand_fields(fields)
+    if len(expanded) <= max_per_request:
+        return [expanded]
+    return [expanded[i:i + max_per_request] for i in range(0, len(expanded), max_per_request)]
 
 
 def _normalize_date(date_str: str) -> str:

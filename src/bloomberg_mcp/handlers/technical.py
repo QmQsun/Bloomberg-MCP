@@ -6,6 +6,8 @@ import logging
 from bloomberg_mcp._mcp_instance import mcp
 from bloomberg_mcp.models import TechnicalAnalysisInput, ResponseFormat
 from bloomberg_mcp.utils import _truncate_response
+from bloomberg_mcp.core.logging import log_tool_call
+from bloomberg_mcp.handlers._common import pre_request, fallback_or_error
 
 logger = logging.getLogger(__name__)
 
@@ -45,97 +47,97 @@ async def bloomberg_get_technical_analysis(params: TechnicalAnalysisInput) -> st
         security="AAPL US Equity", study="rsi", start_date="20240101",
         end_date="20240630", period=14
     """
-    try:
-        from bloomberg_mcp.core.session import BloombergSession
-        from bloomberg_mcp.core.requests import build_study_request
-        from bloomberg_mcp.core.responses import parse_study_response
-        from bloomberg_mcp.utils import BLOOMBERG_HOST, BLOOMBERG_PORT
+    with log_tool_call("bloomberg_get_technical_analysis",
+                       securities=[params.security]) as ctx:
+        try:
+            pre_request()
 
-        # Get session
-        session = BloombergSession.get_instance(host=BLOOMBERG_HOST, port=BLOOMBERG_PORT)
-        if not session.is_connected():
-            if not session.connect():
-                return "Error: Failed to connect to Bloomberg Terminal."
+            from bloomberg_mcp.core.session import BloombergSession
+            from bloomberg_mcp.core.requests import build_study_request
+            from bloomberg_mcp.core.responses import parse_study_response
+            from bloomberg_mcp.utils import BLOOMBERG_HOST, BLOOMBERG_PORT
 
-        # Open tasvc service
-        service = session.get_service("//blp/tasvc")
-        if service is None:
-            return (
-                "Error: Failed to open //blp/tasvc service. "
-                "Technical analysis service may not be available on this terminal."
+            session = BloombergSession.get_instance(host=BLOOMBERG_HOST, port=BLOOMBERG_PORT)
+            if not session.is_connected():
+                if not session.connect():
+                    return "Error: Failed to connect to Bloomberg Terminal."
+
+            service = session.get_service("//blp/tasvc")
+            if service is None:
+                return (
+                    "Error: Failed to open //blp/tasvc service. "
+                    "Technical analysis service may not be available on this terminal."
+                )
+
+            request = build_study_request(
+                service=service,
+                security=params.security,
+                study=params.study,
+                start_date=params.start_date,
+                end_date=params.end_date,
+                period=params.period,
             )
 
-        # Build and send request
-        request = build_study_request(
-            service=service,
-            security=params.security,
-            study=params.study,
-            start_date=params.start_date,
-            end_date=params.end_date,
-            period=params.period,
-        )
+            data_points = session.send_request(
+                request,
+                service_name="//blp/tasvc",
+                parse_func=parse_study_response,
+            )
 
-        data_points = session.send_request(
-            request,
-            service_name="//blp/tasvc",
-            parse_func=parse_study_response,
-        )
+            if not data_points:
+                return f"No technical analysis data returned for {params.security} / {params.study}"
 
-        if not data_points:
-            return f"No technical analysis data returned for {params.security} / {params.study}"
+            period_str = f"({params.period})" if params.period else ""
+            study_label = f"{params.study.upper()}{period_str}"
 
-        # Build display name
-        period_str = f"({params.period})" if params.period else ""
-        study_label = f"{params.study.upper()}{period_str}"
+            if params.response_format == ResponseFormat.MARKDOWN:
+                lines = [
+                    f"## Technical Analysis: {params.security}",
+                    f"**Study**: {study_label}",
+                    f"**Range**: {params.start_date} to {params.end_date}",
+                    f"**Data points**: {len(data_points)}",
+                    ""
+                ]
 
-        if params.response_format == ResponseFormat.MARKDOWN:
-            lines = [
-                f"## Technical Analysis: {params.security}",
-                f"**Study**: {study_label}",
-                f"**Range**: {params.start_date} to {params.end_date}",
-                f"**Data points**: {len(data_points)}",
-                ""
-            ]
+                if data_points:
+                    value_keys = list(data_points[0].values.keys())
+                    cols = ["Date"] + value_keys
+                    lines.append("| " + " | ".join(cols) + " |")
+                    lines.append("|" + "---|" * len(cols))
 
-            # Determine column names from first data point
-            if data_points:
-                value_keys = list(data_points[0].values.keys())
-                cols = ["Date"] + value_keys
-                lines.append("| " + " | ".join(cols) + " |")
-                lines.append("|" + "---|" * len(cols))
+                    for dp in data_points[:100]:
+                        date_str = str(dp.date)
+                        if hasattr(dp.date, "strftime"):
+                            date_str = dp.date.strftime("%Y-%m-%d")
+                        row = [date_str]
+                        for k in value_keys:
+                            v = dp.values.get(k)
+                            if isinstance(v, float):
+                                row.append(f"{v:.4f}")
+                            else:
+                                row.append(str(v) if v is not None else "-")
+                        lines.append("| " + " | ".join(row) + " |")
 
-                for dp in data_points[:100]:
-                    date_str = str(dp.date)
-                    if hasattr(dp.date, "strftime"):
-                        date_str = dp.date.strftime("%Y-%m-%d")
-                    row = [date_str]
-                    for k in value_keys:
-                        v = dp.values.get(k)
-                        if isinstance(v, float):
-                            row.append(f"{v:.4f}")
-                        else:
-                            row.append(str(v) if v is not None else "-")
-                    lines.append("| " + " | ".join(row) + " |")
+                    if len(data_points) > 100:
+                        lines.append(f"\n*... and {len(data_points) - 100} more data points*")
 
-                if len(data_points) > 100:
-                    lines.append(f"\n*... and {len(data_points) - 100} more data points*")
+                result = "\n".join(lines)
+            else:
+                result = json.dumps({
+                    "security": params.security,
+                    "study": study_label,
+                    "start_date": params.start_date,
+                    "end_date": params.end_date,
+                    "total_points": len(data_points),
+                    "data": [
+                        {"date": str(dp.date), **dp.values}
+                        for dp in data_points
+                    ],
+                }, indent=2, default=str)
 
-            result = "\n".join(lines)
-        else:
-            result = json.dumps({
-                "security": params.security,
-                "study": study_label,
-                "start_date": params.start_date,
-                "end_date": params.end_date,
-                "total_points": len(data_points),
-                "data": [
-                    {"date": str(dp.date), **dp.values}
-                    for dp in data_points
-                ],
-            }, indent=2, default=str)
+            ctx["result_size"] = len(result)
+            return _truncate_response(result)
 
-        return _truncate_response(result)
-
-    except Exception as e:
-        logger.exception("Error fetching technical analysis")
-        return f"Error fetching technical analysis: {str(e)}"
+        except Exception as e:
+            ctx["error"] = True
+            return fallback_or_error(e, "bloomberg_get_technical_analysis")

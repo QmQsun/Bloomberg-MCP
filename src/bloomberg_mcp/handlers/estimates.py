@@ -6,6 +6,8 @@ import logging
 from bloomberg_mcp._mcp_instance import mcp
 from bloomberg_mcp.models import EstimatesDetailInput, ResponseFormat
 from bloomberg_mcp.utils import _truncate_response
+from bloomberg_mcp.core.logging import log_tool_call
+from bloomberg_mcp.handlers._common import pre_request, fallback_or_error
 
 logger = logging.getLogger(__name__)
 
@@ -73,111 +75,116 @@ async def bloomberg_get_estimates_detail(params: EstimatesDetailInput) -> str:
         securities=["AAPL US Equity"], metrics=["EPS", "SALES"],
         periods=["1FY", "2FY", "1FQ"]
     """
-    try:
-        from bloomberg_mcp.tools import get_reference_data
+    with log_tool_call("bloomberg_get_estimates_detail",
+                       securities=params.securities) as ctx:
+        try:
+            pre_request()
 
-        # Build field list for each metric
-        fields = []
-        for metric_key in params.metrics:
-            metric_upper = metric_key.upper()
-            if metric_upper in ESTIMATE_FIELD_TEMPLATES:
-                fields.extend(ESTIMATE_FIELD_TEMPLATES[metric_upper])
-            if params.include_revisions and metric_upper in REVISION_FIELDS:
-                fields.append(REVISION_FIELDS[metric_upper])
-            if params.include_surprise and metric_upper in SURPRISE_FIELDS:
-                fields.append(SURPRISE_FIELDS[metric_upper])
+            from bloomberg_mcp.tools import get_reference_data
 
-        # Deduplicate
-        fields = list(dict.fromkeys(fields))
+            # Build field list for each metric
+            fields = []
+            for metric_key in params.metrics:
+                metric_upper = metric_key.upper()
+                if metric_upper in ESTIMATE_FIELD_TEMPLATES:
+                    fields.extend(ESTIMATE_FIELD_TEMPLATES[metric_upper])
+                if params.include_revisions and metric_upper in REVISION_FIELDS:
+                    fields.append(REVISION_FIELDS[metric_upper])
+                if params.include_surprise and metric_upper in SURPRISE_FIELDS:
+                    fields.append(SURPRISE_FIELDS[metric_upper])
 
-        # Fetch data for each period using BEST_FPERIOD_OVERRIDE
-        all_results = {}
-        for security in params.securities:
-            all_results[security] = {}
+            # Deduplicate
+            fields = list(dict.fromkeys(fields))
 
-        for period in params.periods:
-            overrides = {"BEST_FPERIOD_OVERRIDE": period}
+            # Fetch data for each period using BEST_FPERIOD_OVERRIDE
+            all_results = {}
+            for security in params.securities:
+                all_results[security] = {}
 
-            data = get_reference_data(
-                securities=params.securities,
-                fields=fields,
-                overrides=overrides
-            )
+            for period in params.periods:
+                overrides = {"BEST_FPERIOD_OVERRIDE": period}
 
-            for sec_data in data:
-                if sec_data.security not in all_results:
-                    all_results[sec_data.security] = {}
-                all_results[sec_data.security][period] = {
-                    "fields": sec_data.fields,
-                    "errors": sec_data.errors,
-                }
+                data = get_reference_data(
+                    securities=params.securities,
+                    fields=fields,
+                    overrides=overrides
+                )
 
-        # Format output
-        if params.response_format == ResponseFormat.MARKDOWN:
-            lines = ["## Consensus Estimates Detail", ""]
+                for sec_data in data:
+                    if sec_data.security not in all_results:
+                        all_results[sec_data.security] = {}
+                    all_results[sec_data.security][period] = {
+                        "fields": sec_data.fields,
+                        "errors": sec_data.errors,
+                    }
 
-            for security, periods_data in all_results.items():
-                lines.append(f"### {security}")
-                lines.append("")
+            # Format output
+            if params.response_format == ResponseFormat.MARKDOWN:
+                lines = ["## Consensus Estimates Detail", ""]
 
-                for metric_key in params.metrics:
-                    metric_upper = metric_key.upper()
-                    base_field = f"BEST_{metric_upper}"
-                    lines.append(f"**{metric_upper} Estimates:**")
+                for security, periods_data in all_results.items():
+                    lines.append(f"### {security}")
                     lines.append("")
 
-                    # Table header
-                    cols = ["Period", "Consensus", "Median", "High", "Low", "#Analysts"]
-                    if params.include_revisions and metric_upper in REVISION_FIELDS:
-                        cols.append("4Wk Rev")
-                    lines.append("| " + " | ".join(cols) + " |")
-                    lines.append("|" + "---|" * len(cols))
-
-                    for period, pdata in periods_data.items():
-                        f = pdata["fields"]
-                        row = [
-                            period,
-                            _fmt(f.get(base_field)),
-                            _fmt(f.get(f"{base_field}_MEDIAN")),
-                            _fmt(f.get(f"{base_field}_HIGH")),
-                            _fmt(f.get(f"{base_field}_LOW")),
-                            _fmt(f.get(f"{base_field}_NUM_EST")),
-                        ]
-                        if params.include_revisions and metric_upper in REVISION_FIELDS:
-                            rev = f.get(REVISION_FIELDS[metric_upper])
-                            row.append(f"{rev:+.2f}%" if isinstance(rev, (int, float)) else "-")
-                        lines.append("| " + " | ".join(row) + " |")
-
-                    lines.append("")
-
-                # Surprise section (period-independent, just show once)
-                if params.include_surprise:
-                    first_period = next(iter(periods_data.values()), {})
-                    f = first_period.get("fields", {})
-                    surprise_items = []
-                    for metric_key2 in params.metrics:
-                        mu = metric_key2.upper()
-                        if mu in SURPRISE_FIELDS:
-                            val = f.get(SURPRISE_FIELDS[mu])
-                            if val is not None:
-                                surprise_items.append(f"{mu}: {val:+.4f}" if isinstance(val, float) else f"{mu}: {val}")
-                    if surprise_items:
-                        lines.append(f"**Last Surprise:** {', '.join(surprise_items)}")
+                    for metric_key in params.metrics:
+                        metric_upper = metric_key.upper()
+                        base_field = f"BEST_{metric_upper}"
+                        lines.append(f"**{metric_upper} Estimates:**")
                         lines.append("")
 
-            result = "\n".join(lines)
-        else:
-            result = json.dumps({
-                "securities": all_results,
-                "metrics": params.metrics,
-                "periods": params.periods,
-            }, indent=2, default=str)
+                        # Table header
+                        cols = ["Period", "Consensus", "Median", "High", "Low", "#Analysts"]
+                        if params.include_revisions and metric_upper in REVISION_FIELDS:
+                            cols.append("4Wk Rev")
+                        lines.append("| " + " | ".join(cols) + " |")
+                        lines.append("|" + "---|" * len(cols))
 
-        return _truncate_response(result)
+                        for period, pdata in periods_data.items():
+                            f = pdata["fields"]
+                            row = [
+                                period,
+                                _fmt(f.get(base_field)),
+                                _fmt(f.get(f"{base_field}_MEDIAN")),
+                                _fmt(f.get(f"{base_field}_HIGH")),
+                                _fmt(f.get(f"{base_field}_LOW")),
+                                _fmt(f.get(f"{base_field}_NUM_EST")),
+                            ]
+                            if params.include_revisions and metric_upper in REVISION_FIELDS:
+                                rev = f.get(REVISION_FIELDS[metric_upper])
+                                row.append(f"{rev:+.2f}%" if isinstance(rev, (int, float)) else "-")
+                            lines.append("| " + " | ".join(row) + " |")
 
-    except Exception as e:
-        logger.exception("Error fetching estimates detail")
-        return f"Error fetching estimates detail: {str(e)}"
+                        lines.append("")
+
+                    # Surprise section (period-independent, just show once)
+                    if params.include_surprise:
+                        first_period = next(iter(periods_data.values()), {})
+                        f = first_period.get("fields", {})
+                        surprise_items = []
+                        for metric_key2 in params.metrics:
+                            mu = metric_key2.upper()
+                            if mu in SURPRISE_FIELDS:
+                                val = f.get(SURPRISE_FIELDS[mu])
+                                if val is not None:
+                                    surprise_items.append(f"{mu}: {val:+.4f}" if isinstance(val, float) else f"{mu}: {val}")
+                        if surprise_items:
+                            lines.append(f"**Last Surprise:** {', '.join(surprise_items)}")
+                            lines.append("")
+
+                result = "\n".join(lines)
+            else:
+                result = json.dumps({
+                    "securities": all_results,
+                    "metrics": params.metrics,
+                    "periods": params.periods,
+                }, indent=2, default=str)
+
+            ctx["result_size"] = len(result)
+            return _truncate_response(result)
+
+        except Exception as e:
+            ctx["error"] = True
+            return fallback_or_error(e, "bloomberg_get_estimates_detail")
 
 
 def _fmt(val) -> str:

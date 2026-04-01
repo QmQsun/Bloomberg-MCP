@@ -3,11 +3,14 @@
 import logging
 
 from bloomberg_mcp._mcp_instance import mcp
-
-logger = logging.getLogger(__name__)
 from bloomberg_mcp.models import ReferenceDataInput
 from bloomberg_mcp.utils import _expand_fields
 from bloomberg_mcp.formatters import _format_security_data, _smart_truncate_security_data
+from bloomberg_mcp.core.logging import log_tool_call
+from bloomberg_mcp.core.validators import validate_field_count, validate_reference_response
+from bloomberg_mcp.handlers._common import pre_request, fallback_or_error
+
+logger = logging.getLogger(__name__)
 
 
 @mcp.tool(
@@ -42,19 +45,40 @@ async def bloomberg_get_reference_data(params: ReferenceDataInput) -> str:
         securities=["AAPL US Equity"], fields=["PX_LAST", "PE_RATIO"]
         securities=["AAPL US Equity"], fields=["VALUATION", "MOMENTUM"]  # FieldSet shortcuts
     """
-    try:
-        from bloomberg_mcp.tools import get_reference_data
+    cache_key = {
+        "request_type": "reference",
+        "securities": params.securities,
+        "fields": params.fields,
+        "overrides": params.overrides,
+    }
 
-        expanded_fields = _expand_fields(params.fields)
+    with log_tool_call("bloomberg_get_reference_data",
+                       securities=params.securities,
+                       fields=params.fields) as ctx:
+        try:
+            pre_request()
 
-        data = get_reference_data(
-            securities=params.securities,
-            fields=expanded_fields,
-            overrides=params.overrides
-        )
+            from bloomberg_mcp.tools import get_reference_data
 
-        result = _format_security_data(data, params.response_format)
-        return _smart_truncate_security_data(data, result)
+            expanded_fields = _expand_fields(params.fields)
+            validate_field_count(expanded_fields, "reference")
 
-    except Exception as e:
-        return f"Error fetching reference data: {str(e)}"
+            data = get_reference_data(
+                securities=params.securities,
+                fields=expanded_fields,
+                overrides=params.overrides
+            )
+
+            # Post-response quality gate
+            warnings = validate_reference_response(data, expanded_fields)
+            if warnings:
+                ctx["error_count"] = len(warnings)
+
+            result = _format_security_data(data, params.response_format)
+            result = _smart_truncate_security_data(data, result)
+            ctx["result_size"] = len(result)
+            return result
+
+        except Exception as e:
+            ctx["error"] = True
+            return fallback_or_error(e, "bloomberg_get_reference_data", cache_key)

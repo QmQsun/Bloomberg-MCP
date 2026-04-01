@@ -1,0 +1,273 @@
+# Bloomberg MCP FieldSet Definitions
+# External configuration — editable without code changes.
+#
+# To add a new FieldSet:
+#   1. Add an entry below with a unique name
+#   2. List the Bloomberg field mnemonics
+#   3. Restart the server (hot-reload not yet supported)
+#
+# FieldSets can be referenced by name in tool calls:
+#   fields=["VALUATION", "MOMENTUM"]  -> expands to individual fields
+
+# --- Price ---
+price:
+  - PX_LAST
+  - PX_OPEN
+  - PX_HIGH
+  - PX_LOW
+  - CHG_PCT_1D
+
+price_extended:
+  - PX_LAST
+  - PX_OPEN
+  - PX_HIGH
+  - PX_LOW
+  - PX_BID
+  - PX_ASK
+  - PX_MID
+  - PX_CLOSE_1D
+  - PX_LAST_EOD
+  - PX_OFFICIAL_CLOSE
+  - LAST_PRICE
+  - LAST_TRADE
+
+# --- Momentum ---
+momentum:
+  - CHG_PCT_1D
+  - CHG_PCT_5D
+  - CHG_PCT_1M
+  - CHG_PCT_YTD
+
+momentum_extended:
+  - CHG_PCT_1D
+  - CHG_PCT_5D
+  - CHG_PCT_1M
+  - CHG_PCT_3M
+  - CHG_PCT_6M
+  - CHG_PCT_1YR
+  - CHG_PCT_YTD
+
+net_change:
+  - CHG_NET_1D
+  - CHG_NET_5D
+
+# --- Volume ---
+rvol:
+  - VOLUME
+  - VOLUME_AVG_20D
+  - TURNOVER
+
+volume_extended:
+  - VOLUME
+  - VOLUME_AVG_5D
+  - VOLUME_AVG_10D
+  - VOLUME_AVG_20D
+  - VOLUME_AVG_30D
+  - TURNOVER
+  - PX_VOLUME
+
+liquidity:
+  - VOLUME
+  - TURNOVER
+  - AVG_DAILY_VALUE_TRADED_5D
+  - AVG_DAILY_VALUE_TRADED_20D
+  - EQY_SH_OUT
+
+# --- Technical ---
+technical:
+  - RSI_14D
+  - VOLATILITY_30D
+  - VOLATILITY_90D
+  - BETA_RAW_OVERRIDABLE
+
+technical_extended:
+  - RSI_14D
+  - RSI_30D
+  - VOLATILITY_10D
+  - VOLATILITY_20D
+  - VOLATILITY_30D
+  - VOLATILITY_60D
+  - VOLATILITY_90D
+  - VOLATILITY_260D
+  - BETA_RAW_OVERRIDABLE
+  - BETA_ADJ_OVERRIDABLE
+
+volatility:
+  - VOLATILITY_10D
+  - VOLATILITY_20D
+  - VOLATILITY_30D
+  - VOLATILITY_60D
+  - VOLATILITY_90D
+  - VOLATILITY_260D
+
+rsi:
+  - RSI_14D
+  - RSI_30D
+
+# --- Valuation ---
+valuation:
+  - PE_RATIO
+  - PX_TO_BOOK_RATIO
+  - CUR_MKT_CAP
+  - DIVIDEND_YIELD
+
+valuation_extended:
+  - PE_RATIO
+  - BEST_PE_RATIO
+  - PX_TO_BOOK_RATIO
+  - PX_TO_SALES_RATIO
+  - EV_TO_T12M_EBITDA
+  - PX_TO_FREE_CASH_FLOW
+  - DVD_PRCNT_YLD
+  - ENTERPRISE_VALUE
+  - CUR_MKT_CAP
+
+# --- Analyst ---
+analyst:
+  - EQY_REC_CONS
+  - BEST_TARGET_PRICE
+  - TOT_ANALYST_REC
+
+# --- Classification ---
+sector:
+  - GICS_SECTOR_NAME
+  - GICS_INDUSTRY_GROUP_NAME
+  - GICS_INDUSTRY_NAME
+
+classification:
+  - GICS_SECTOR
+  - GICS_SECTOR_NAME
+  - GICS_INDUSTRY_GROUP_NAME
+  - GICS_INDUSTRY_NAME
+  - GICS_SUB_INDUSTRY_NAME
+  - COUNTRY_ISO
+  - EXCH_CODE
+
+# --- Descriptive ---
+descriptive:
+  - NAME
+  - SECURITY_TYP
+  - EXCH_CODE
+
+# --- Sentiment ---
+sentiment:
+  - NEWS_SENTIMENT
+  - NEWS_SENTIMENT_DAILY_AVG
+
+# --- Composites ---
+adr:
+  - PX_LAST
+  - CHG_PCT_1D
+  - VOLUME
+  - VOLUME_AVG_20D
+  - NEWS_SENTIMENT
+  - GICS_SECTOR_NAME
+
+morning_note:
+  - PX_LAST
+  - PX_OPEN
+  - PX_HIGH
+  - PX_LOW
+  - CHG_PCT_1D
+  - VOLUME
+  - VOLUME_AVG_20D
+  - NEWS_SENTIMENT
+  - NEWS_SENTIMENT_DAILY_AVG
+  - GICS_SECTOR_NAME
+
+screening_full:
+  - PX_LAST
+  - PX_OPEN
+  - PX_HIGH
+  - PX_LOW
+  - CHG_PCT_1D
+  - CHG_PCT_5D
+  - CHG_PCT_1M
+  - CHG_PCT_YTD
+  - VOLUME
+  - VOLUME_AVG_20D
+  - TURNOVER
+  - RSI_14D
+  - VOLATILITY_30D
+  - BETA_RAW_OVERRIDABLE
+  - PE_RATIO
+  - PX_TO_BOOK_RATIO
+  - CUR_MKT_CAP
+  - GICS_SECTOR_NAME
+  - GICS_INDUSTRY_NAME
+  - NEWS_SENTIMENT
+  - EQY_REC_CONS
+  - BEST_TARGET_PRICE
+
+# --- Fundamentals ---
+estimates_consensus:
+  - BEST_EPS
+  - BEST_EPS_MEDIAN
+  - BEST_EPS_4WK_CHG
+  - BEST_SALES
+  - BEST_SALES_4WK_CHG
+  - BEST_EBITDA
+  - EQY_REC_CONS
+  - BEST_TARGET_PRICE
+  - BEST_EPS_SURPRISE
+  - BEST_EST_LONG_TERM_GROWTH
+
+profitability:
+  - GROSS_MARGIN
+  - OPER_MARGIN
+  - PROF_MARGIN
+  - RETURN_ON_EQUITY
+  - RETURN_ON_ASSET
+  - RETURN_ON_INV_CAPITAL
+  - EBITDA_MARGIN
+
+cash_flow:
+  - FREE_CASH_FLOW_YIELD
+  - CF_FREE_CASH_FLOW
+  - CASH_FLOW_FROM_OPERATIONS
+  - NET_INCOME
+  - IS_COMP_SALES
+  - EBITDA
+
+balance_sheet:
+  - TOT_DEBT_TO_TOT_EQY
+  - INTEREST_COVERAGE_RATIO
+  - CUR_RATIO
+  - QUICK_RATIO
+  - TOT_DEBT_TO_EBITDA
+  - NET_DEBT
+
+ownership:
+  - PCT_HELD_BY_INSIDERS
+  - PCT_HELD_BY_INSTITUTIONS
+  - NUM_OF_INSTITUTIONAL_HOLDERS
+  - SHORT_INT_RATIO
+  - PUT_CALL_OPEN_INTEREST_RATIO
+
+governance:
+  - ESG_DISCLOSURE_SCORE
+  - ENVIRON_DISCLOSURE_SCORE
+  - SOCIAL_DISCLOSURE_SCORE
+  - GOVNCE_DISCLOSURE_SCORE
+
+risk:
+  - BETA_RAW_OVERRIDABLE
+  - VOLATILITY_10D
+  - VOLATILITY_30D
+  - VOLATILITY_90D
+  - VOLATILITY_260D
+  - CUR_MKT_CAP
+
+earnings_surprise:
+  - BEST_EPS
+  - IS_EPS
+  - BEST_EPS_SURPRISE
+  - BEST_SALES
+  - SALES_REV_TURN
+  - BEST_SALES_SURPRISE
+
+growth:
+  - SALES_GROWTH
+  - EPS_GROWTH
+  - EBITDA_GROWTH
+  - BEST_EST_LONG_TERM_GROWTH

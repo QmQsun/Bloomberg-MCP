@@ -5,6 +5,8 @@ import logging
 
 from bloomberg_mcp._mcp_instance import mcp
 from bloomberg_mcp.models import EconomicCalendarToolInput, EarningsCalendarToolInput, ResponseFormat
+from bloomberg_mcp.core.logging import log_tool_call
+from bloomberg_mcp.handlers._common import pre_request, fallback_or_error
 
 logger = logging.getLogger(__name__)
 
@@ -61,47 +63,53 @@ async def bloomberg_get_economic_calendar(params: EconomicCalendarToolInput) -> 
     Example:
         mode="week_ahead", regions=["US", "Japan"], importance="high"
     """
-    try:
-        from bloomberg_mcp.tools.economic_calendar import (
-            get_economic_calendar,
-            format_calendar_for_morning_note,
-            EconomicCalendarInput,
-            CalendarMode,
-            EventImportance,
-        )
+    with log_tool_call("bloomberg_get_economic_calendar") as ctx:
+        try:
+            pre_request()
 
-        mode_map = {
-            "week_ahead": CalendarMode.WEEK_AHEAD,
-            "today": CalendarMode.TODAY,
-            "recent": CalendarMode.RECENT,
-            "central_bank": CalendarMode.CENTRAL_BANK,
-        }
-        importance_map = {
-            "high": EventImportance.HIGH,
-            "medium": EventImportance.MEDIUM,
-            "low": EventImportance.LOW,
-            "all": EventImportance.ALL,
-        }
+            from bloomberg_mcp.tools.economic_calendar import (
+                get_economic_calendar,
+                format_calendar_for_morning_note,
+                EconomicCalendarInput,
+                CalendarMode,
+                EventImportance,
+            )
 
-        calendar_input = EconomicCalendarInput(
-            mode=mode_map.get(params.mode.value, CalendarMode.WEEK_AHEAD),
-            regions=params.regions,
-            categories=params.categories,
-            importance=importance_map.get(params.importance.lower(), EventImportance.HIGH),
-            days_ahead=params.days_ahead,
-            response_format=params.response_format.value,
-        )
+            mode_map = {
+                "week_ahead": CalendarMode.WEEK_AHEAD,
+                "today": CalendarMode.TODAY,
+                "recent": CalendarMode.RECENT,
+                "central_bank": CalendarMode.CENTRAL_BANK,
+            }
+            importance_map = {
+                "high": EventImportance.HIGH,
+                "medium": EventImportance.MEDIUM,
+                "low": EventImportance.LOW,
+                "all": EventImportance.ALL,
+            }
 
-        result = get_economic_calendar(calendar_input)
+            calendar_input = EconomicCalendarInput(
+                mode=mode_map.get(params.mode.value, CalendarMode.WEEK_AHEAD),
+                regions=params.regions,
+                categories=params.categories,
+                importance=importance_map.get(params.importance.lower(), EventImportance.HIGH),
+                days_ahead=params.days_ahead,
+                response_format=params.response_format.value,
+            )
 
-        if params.response_format == ResponseFormat.MARKDOWN:
-            return format_calendar_for_morning_note(result)
-        else:
-            return json.dumps(result.to_dict(), indent=2)
+            result = get_economic_calendar(calendar_input)
 
-    except Exception as e:
-        logger.exception("Error fetching economic calendar")
-        return f"Error fetching economic calendar: {str(e)}"
+            if params.response_format == ResponseFormat.MARKDOWN:
+                output = format_calendar_for_morning_note(result)
+            else:
+                output = json.dumps(result.to_dict(), indent=2)
+
+            ctx["result_size"] = len(output)
+            return output
+
+        except Exception as e:
+            ctx["error"] = True
+            return fallback_or_error(e, "bloomberg_get_economic_calendar")
 
 
 @mcp.tool(
@@ -141,12 +149,6 @@ async def bloomberg_get_earnings_calendar(params: EarningsCalendarToolInput) -> 
     - reports_today: Companies reporting today (with estimates)
     - reports_this_week: Upcoming earnings by date
 
-    JAPAN TRADING CONTEXT:
-    Use this to understand:
-    1. What US earnings moved markets overnight (affects Japan ADRs/related)
-    2. Semiconductor earnings \u2192 read-through to 8035, 6857, 6920
-    3. Financial earnings \u2192 read-through to 8306, 8411
-
     Args:
         params: EarningsCalendarToolInput with mode, universe, days_ahead
 
@@ -156,35 +158,41 @@ async def bloomberg_get_earnings_calendar(params: EarningsCalendarToolInput) -> 
     Example:
         mode="week_ahead", universe="SEMI_LEADERS", days_ahead=7
     """
-    try:
-        from bloomberg_mcp.tools.earnings_calendar import (
-            get_earnings_calendar,
-            format_earnings_for_morning_note,
-            EarningsCalendarInput,
-            EarningsMode,
-        )
+    with log_tool_call("bloomberg_get_earnings_calendar") as ctx:
+        try:
+            pre_request()
 
-        mode_map = {
-            "overnight": EarningsMode.OVERNIGHT,
-            "today": EarningsMode.TODAY,
-            "week_ahead": EarningsMode.WEEK_AHEAD,
-        }
+            from bloomberg_mcp.tools.earnings_calendar import (
+                get_earnings_calendar,
+                format_earnings_for_morning_note,
+                EarningsCalendarInput,
+                EarningsMode,
+            )
 
-        calendar_input = EarningsCalendarInput(
-            mode=mode_map.get(params.mode.value, EarningsMode.WEEK_AHEAD),
-            universe=params.universe,
-            days_ahead=params.days_ahead,
-            include_estimates=params.include_estimates,
-            response_format=params.response_format.value,
-        )
+            mode_map = {
+                "overnight": EarningsMode.OVERNIGHT,
+                "today": EarningsMode.TODAY,
+                "week_ahead": EarningsMode.WEEK_AHEAD,
+            }
 
-        result = get_earnings_calendar(calendar_input)
+            calendar_input = EarningsCalendarInput(
+                mode=mode_map.get(params.mode.value, EarningsMode.WEEK_AHEAD),
+                universe=params.universe,
+                days_ahead=params.days_ahead,
+                include_estimates=params.include_estimates,
+                response_format=params.response_format.value,
+            )
 
-        if params.response_format == ResponseFormat.MARKDOWN:
-            return format_earnings_for_morning_note(result)
-        else:
-            return json.dumps(result.to_dict(), indent=2)
+            result = get_earnings_calendar(calendar_input)
 
-    except Exception as e:
-        logger.exception("Error fetching earnings calendar")
-        return f"Error fetching earnings calendar: {str(e)}"
+            if params.response_format == ResponseFormat.MARKDOWN:
+                output = format_earnings_for_morning_note(result)
+            else:
+                output = json.dumps(result.to_dict(), indent=2)
+
+            ctx["result_size"] = len(output)
+            return output
+
+        except Exception as e:
+            ctx["error"] = True
+            return fallback_or_error(e, "bloomberg_get_earnings_calendar")

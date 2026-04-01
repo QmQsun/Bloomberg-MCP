@@ -1,12 +1,23 @@
-"""Bloomberg API session management with singleton pattern."""
+"""Bloomberg API session management with singleton pattern.
+
+Includes concurrency control (semaphore), queue depth limiting,
+and automatic reconnection on session drop.
+"""
 
 import logging
 import threading
+import time
 from typing import List, Optional, Dict, Any
 
 import blpapi
 
 logger = logging.getLogger(__name__)
+
+# Concurrency limits
+_MAX_CONCURRENT_REQUESTS = 8
+_MAX_QUEUE_DEPTH = 32
+_RECONNECT_MAX_RETRIES = 3
+_RECONNECT_BACKOFF_BASE = 5  # seconds
 
 from .responses import (
     parse_reference_data_response,
@@ -55,6 +66,11 @@ class BloombergSession:
         self._services: Dict[str, blpapi.Service] = {}
         self._connected = False
         self._initialized = True
+
+        # Concurrency control
+        self._semaphore = threading.Semaphore(_MAX_CONCURRENT_REQUESTS)
+        self._queue_depth = 0
+        self._queue_lock = threading.Lock()
 
     @classmethod
     def get_instance(cls, host: str = "localhost", port: int = 8194) -> "BloombergSession":
@@ -163,6 +179,9 @@ class BloombergSession:
         """
         Send a request and wait for response synchronously.
 
+        Includes concurrency control (semaphore + queue depth limit)
+        and automatic reconnection on session termination.
+
         Args:
             request: Bloomberg API request object
             service_name: Name of the service being used
@@ -174,6 +193,33 @@ class BloombergSession:
         if not self.is_connected():
             raise RuntimeError("Session is not connected. Call connect() first.")
 
+        # Queue depth check
+        with self._queue_lock:
+            if self._queue_depth >= _MAX_QUEUE_DEPTH:
+                raise RuntimeError(
+                    f"Bloomberg request queue full ({_MAX_QUEUE_DEPTH} pending). "
+                    "Too many concurrent requests — retry later."
+                )
+            self._queue_depth += 1
+
+        try:
+            # Acquire semaphore (blocks if at max concurrency)
+            self._semaphore.acquire()
+            try:
+                return self._send_request_impl(request, service_name, parse_func)
+            finally:
+                self._semaphore.release()
+        finally:
+            with self._queue_lock:
+                self._queue_depth -= 1
+
+    def _send_request_impl(
+        self,
+        request: blpapi.Request,
+        service_name: str,
+        parse_func=None
+    ) -> List[Any]:
+        """Internal: send request without concurrency guards."""
         results = []
 
         try:
@@ -229,6 +275,7 @@ class BloombergSession:
                             blpapi.Names.SESSION_TERMINATED,
                             blpapi.Names.SESSION_STARTUP_FAILURE,
                         ):
+                            self._connected = False
                             raise RuntimeError("Session terminated")
 
         except Exception as e:
@@ -236,6 +283,53 @@ class BloombergSession:
             raise
 
         return results
+
+    def reconnect(self) -> bool:
+        """Attempt to reconnect to Bloomberg after session drop.
+
+        Tries up to _RECONNECT_MAX_RETRIES with exponential backoff.
+
+        Returns:
+            True if reconnection succeeded
+        """
+        logger.info("Attempting Bloomberg session reconnection...")
+        self._connected = False
+
+        if self._session is not None:
+            try:
+                self._session.stop()
+            except Exception:
+                pass
+            self._session = None
+        self._services.clear()
+
+        for attempt in range(1, _RECONNECT_MAX_RETRIES + 1):
+            try:
+                session_options = blpapi.SessionOptions()
+                session_options.setServerHost(self._host)
+                session_options.setServerPort(self._port)
+                self._session = blpapi.Session(session_options)
+
+                if self._session.start():
+                    self._connected = True
+                    logger.info(
+                        "Bloomberg session reconnected on attempt %d", attempt
+                    )
+                    return True
+            except Exception as e:
+                logger.warning(
+                    "Reconnect attempt %d/%d failed: %s",
+                    attempt, _RECONNECT_MAX_RETRIES, e,
+                )
+
+            backoff = _RECONNECT_BACKOFF_BASE * attempt
+            time.sleep(backoff)
+
+        logger.error(
+            "Bloomberg session reconnect failed after %d attempts",
+            _RECONNECT_MAX_RETRIES,
+        )
+        return False
 
     def get_reference_data(
         self,

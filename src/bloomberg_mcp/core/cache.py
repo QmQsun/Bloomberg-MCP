@@ -176,6 +176,28 @@ class BloombergCache:
                 expires_at=time.time() + seconds,
             )
 
+    def get_stale(
+        self,
+        request_type: str,
+        securities: Optional[List[str]] = None,
+        fields: Optional[List[str]] = None,
+        overrides: Optional[Dict[str, Any]] = None,
+        extra: Optional[str] = None,
+    ) -> Optional[Tuple[Any, float]]:
+        """Return expired cached value if available (for degraded mode).
+
+        Returns:
+            Tuple of (value, age_seconds) or None if not in cache at all.
+        """
+        key = self._make_key(request_type, securities, fields, overrides, extra)
+
+        with self._access_lock:
+            entry = self._cache.get(key)
+            if entry is None:
+                return None
+            age = time.time() - entry.created_at
+            return (entry.value, age)
+
     def invalidate(
         self,
         request_type: str,
