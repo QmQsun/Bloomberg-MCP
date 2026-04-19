@@ -474,6 +474,20 @@ Add to your Claude Code MCP settings:
 }
 ```
 
+### Configure GPT Codex
+
+Add to your codex config.toml
+
+[mcp_servers.bloomberg-mcp]
+command = "python"
+args = ["-m", "bloomberg_mcp.server"]
+cwd = "/path/to/bloomberg-mcp"
+
+[mcp_servers.bloomberg-mcp.env]
+BLOOMBERG_HOST = "localhost"
+BLOOMBERG_PORT = "8194"
+
+
 ## Quick Start
 
 ### As a Python Library
